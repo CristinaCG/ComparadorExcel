@@ -318,16 +318,61 @@ def _valores_iguales(
     valor_nuevo: object,
 ) -> bool:
     """
-    Compara dos valores teniendo en cuenta los valores NaN.
+    Compara dos valores teniendo en cuenta:
+
+    - valores nulos
+    - números enteros y decimales
+    - fechas
+    - textos
     """
 
     anterior_es_nulo = pd.isna(valor_anterior)
     nuevo_es_nulo = pd.isna(valor_nuevo)
 
+    # Ambos están vacíos
     if anterior_es_nulo and nuevo_es_nulo:
         return True
 
+    # Sólo uno está vacío
     if anterior_es_nulo or nuevo_es_nulo:
         return False
 
+    # ---------------------------------------------------------
+    # NÚMEROS
+    # ---------------------------------------------------------
+
+    if _es_numero(valor_anterior) and _es_numero(valor_nuevo):
+        return float(valor_anterior) == float(valor_nuevo)
+
+    # ---------------------------------------------------------
+    # FECHAS
+    # ---------------------------------------------------------
+
+    if isinstance(
+        valor_anterior,
+        (pd.Timestamp,),
+    ) and isinstance(
+        valor_nuevo,
+        (pd.Timestamp,),
+    ):
+        return valor_anterior == valor_nuevo
+
+    # ---------------------------------------------------------
+    # RESTO DE VALORES
+    # ---------------------------------------------------------
+
     return valor_anterior == valor_nuevo
+
+
+def _es_numero(valor: object) -> bool:
+    """
+    Determina si un valor es numérico.
+    """
+
+    return isinstance(
+        valor,
+        (int, float, complex),
+    ) and not isinstance(
+        valor,
+        bool,
+    )

@@ -133,3 +133,154 @@ def test_detectar_clave_duplicada():
             columnas_clave=["Codigo"],
             columnas_comparar=["Descripcion"],
         )
+    
+def test_comparar_con_clave_compuesta():
+
+    anterior = pd.DataFrame({
+        "Codigo": [
+            "A001",
+            "A001",
+            "A002",
+        ],
+        "Posicion": [
+            1,
+            2,
+            1,
+        ],
+        "Descripcion": [
+            "Cable 1",
+            "Cable 2",
+            "Cable 3",
+        ],
+    })
+
+    nuevo = pd.DataFrame({
+        "Codigo": [
+            "A001",
+            "A001",
+            "A002",
+        ],
+        "Posicion": [
+            1,
+            2,
+            1,
+        ],
+        "Descripcion": [
+            "Cable 1",
+            "Cable 2 modificado",
+            "Cable 3",
+        ],
+    })
+
+    cambios = comparar_dataframes(
+        anterior,
+        nuevo,
+        columnas_clave=[
+            "Codigo",
+            "Posicion",
+        ],
+        columnas_comparar=[
+            "Descripcion",
+        ],
+    )
+
+    assert len(cambios) == 1
+
+    cambio = cambios[0]
+
+    assert cambio.clave == "A001|2"
+    assert cambio.tipo == "MODIFICADO"
+    assert cambio.columna == "Descripcion"
+    assert cambio.valor_anterior == "Cable 2"
+    assert cambio.valor_nuevo == "Cable 2 modificado"
+
+def test_valores_nulos_no_generan_cambio():
+
+    anterior = pd.DataFrame({
+        "Codigo": ["A001"],
+        "Peso": [None],
+    })
+
+    nuevo = pd.DataFrame({
+        "Codigo": ["A001"],
+        "Peso": [None],
+    })
+
+    cambios = comparar_dataframes(
+        anterior,
+        nuevo,
+        columnas_clave=["Codigo"],
+        columnas_comparar=["Peso"],
+    )
+
+    assert len(cambios) == 0
+
+def test_valor_nulo_a_valor():
+
+    anterior = pd.DataFrame({
+        "Codigo": ["A001"],
+        "Peso": [None],
+    })
+
+    nuevo = pd.DataFrame({
+        "Codigo": ["A001"],
+        "Peso": [25],
+    })
+
+    cambios = comparar_dataframes(
+        anterior,
+        nuevo,
+        columnas_clave=["Codigo"],
+        columnas_comparar=["Peso"],
+    )
+
+    assert len(cambios) == 1
+
+    cambio = cambios[0]
+
+    assert cambio.tipo == "MODIFICADO"
+    assert cambio.columna == "Peso"
+    assert pd.isna(cambio.valor_anterior)
+    assert cambio.valor_nuevo == 25
+
+def test_numeros_equivalentes_no_generan_cambio():
+
+    anterior = pd.DataFrame({
+        "Codigo": ["A001"],
+        "Peso": [10],
+    })
+
+    nuevo = pd.DataFrame({
+        "Codigo": ["A001"],
+        "Peso": [10.0],
+    })
+
+    cambios = comparar_dataframes(
+        anterior,
+        nuevo,
+        columnas_clave=["Codigo"],
+        columnas_comparar=["Peso"],
+    )
+
+    assert len(cambios) == 0
+
+def test_texto_y_numero_son_diferentes():
+
+    anterior = pd.DataFrame({
+        "Codigo": ["A001"],
+        "Valor": ["10"],
+    })
+
+    nuevo = pd.DataFrame({
+        "Codigo": ["A001"],
+        "Valor": [10],
+    })
+
+    cambios = comparar_dataframes(
+        anterior,
+        nuevo,
+        columnas_clave=["Codigo"],
+        columnas_comparar=["Valor"],
+    )
+
+    assert len(cambios) == 1
