@@ -5,8 +5,39 @@ from PySide6.QtCore import (
 )
 
 from PySide6.QtGui import (
-    QColor
+    QColor,
+    QPalette,
 )
+
+from PySide6.QtWidgets import QApplication
+
+
+def _mezclar_color(
+    color_base,
+    color_cambio,
+    porcentaje,
+):
+    """
+    Mezcla un color de fondo con un color indicador.
+    """
+
+    r = int(
+        color_base.red() * (1 - porcentaje)
+        + color_cambio.red() * porcentaje
+    )
+
+    g = int(
+        color_base.green() * (1 - porcentaje)
+        + color_cambio.green() * porcentaje
+    )
+
+    b = int(
+        color_base.blue() * (1 - porcentaje)
+        + color_cambio.blue() * porcentaje
+    )
+
+    return QColor(r, g, b)
+
 
 class ModeloCambios(QAbstractTableModel):
 
@@ -41,10 +72,9 @@ class ModeloCambios(QAbstractTableModel):
 
         cambio = self.cambios[index.row()]
 
-        # ---------------------------------------------------------
+        # =========================================================
         # TEXTO
-        # ---------------------------------------------------------
-
+        # =========================================================
 
         if role == Qt.ItemDataRole.DisplayRole:
 
@@ -61,20 +91,41 @@ class ModeloCambios(QAbstractTableModel):
 
             return str(valor)
 
-        # ---------------------------------------------------------
+        # =========================================================
         # COLOR DE FONDO
-        # ---------------------------------------------------------
+        # =========================================================
 
         if role == Qt.ItemDataRole.BackgroundRole:
 
+            paleta = QApplication.palette()
+
+            fondo = paleta.color(
+                QPalette.ColorRole.Base
+            )
+
             if cambio.tipo == "NUEVO":
-                return QColor(220, 245, 220)
+
+                return _mezclar_color(
+                    fondo,
+                    QColor(80, 180, 80),
+                    0.18,
+                )
 
             if cambio.tipo == "ELIMINADO":
-                return QColor(250, 220, 220)
+
+                return _mezclar_color(
+                    fondo,
+                    QColor(220, 80, 80),
+                    0.18,
+                )
 
             if cambio.tipo == "MODIFICADO":
-                return QColor(255, 245, 200)
+
+                return _mezclar_color(
+                    fondo,
+                    QColor(230, 190, 50),
+                    0.22,
+                )
 
         return None
 

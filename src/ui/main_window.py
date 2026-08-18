@@ -10,12 +10,14 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 
+from qextrawidgets.widgets.views import QFilterableTableView
+
 from src.ui.ui_main_window import Ui_MainWindow
 
-from src.ui.filtro_tabla import (
-    ModeloFiltradoCambios,
-    CabeceraFiltrable,
-)
+# from src.ui.filtro_tabla import (
+#     ModeloFiltradoCambios,
+#     CabeceraFiltrable,
+# )
 
 from src.excel.lector import (
     obtener_hojas,
@@ -38,19 +40,27 @@ class MainWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
+        self._crear_tabla_filtrable()
+
         self.modelo_cambios = ModeloCambios()
 
-        self.modelo_filtrado = ModeloFiltradoCambios()
-
-        self.modelo_filtrado.setSourceModel(
+        self.ui.tableViewCambios.setModel(
             self.modelo_cambios
         )
 
-        self.ui.tableViewCambios.setModel(
-            self.modelo_filtrado
-        )
+        # self.modelo_cambios = ModeloCambios()
 
-        self.ui.tableViewCambios.setSortingEnabled(True)
+        # self.modelo_filtrado = ModeloFiltradoCambios()
+
+        # self.modelo_filtrado.setSourceModel(
+        #     self.modelo_cambios
+        # )
+
+        # self.ui.tableViewCambios.setModel(
+        #     self.modelo_filtrado
+        # )
+
+        # self.ui.tableViewCambios.setSortingEnabled(True)
 
         # Cabecera con filtros
         # cabecera = CabeceraFiltrable(
@@ -160,9 +170,53 @@ class MainWindow(QMainWindow):
         mostrar_anterior: bool,
     ) -> str:
         """
-        Genera HTML resaltando con fondo amarillo las partes
+        Genera HTML resaltando con fondo amarillo suave las partes
         diferentes entre el valor anterior y el nuevo.
+
+        El color se adapta al tema claro/oscuro de Qt.
         """
+
+        # ---------------------------------------------------------
+        # Color de resaltado según el tema
+        # ---------------------------------------------------------
+
+        from PySide6.QtWidgets import QApplication
+        from PySide6.QtGui import QPalette
+
+        paleta = QApplication.palette()
+
+        fondo = paleta.color(
+            QPalette.ColorRole.Base
+        )
+
+        # Amarillo de referencia
+        amarillo = (220, 180, 40)
+
+        # En función del fondo actual hacemos una mezcla
+        porcentaje = 0.35
+
+        rojo = int(
+            fondo.red() * (1 - porcentaje)
+            + amarillo[0] * porcentaje
+        )
+
+        verde = int(
+            fondo.green() * (1 - porcentaje)
+            + amarillo[1] * porcentaje
+        )
+
+        azul = int(
+            fondo.blue() * (1 - porcentaje)
+            + amarillo[2] * porcentaje
+        )
+
+        color_resaltado = (
+            f"rgb({rojo},{verde},{azul})"
+        )
+
+        # ---------------------------------------------------------
+        # Comparar textos
+        # ---------------------------------------------------------
 
         matcher = SequenceMatcher(
             None,
@@ -182,7 +236,10 @@ class MainWindow(QMainWindow):
             if not texto:
                 continue
 
-            # Escapar caracteres HTML
+            # -----------------------------------------------------
+            # Escapar HTML
+            # -----------------------------------------------------
+
             texto = (
                 texto
                 .replace("&", "&amp;")
@@ -191,9 +248,14 @@ class MainWindow(QMainWindow):
                 .replace("\n", "<br>")
             )
 
+            # -----------------------------------------------------
+            # Resaltar diferencia
+            # -----------------------------------------------------
+
             if etiqueta != "equal":
+
                 texto = (
-                    '<span style="background-color: yellow;">'
+                    f'<span style="background-color: {color_resaltado};">'
                     f"{texto}"
                     "</span>"
                 )
@@ -204,8 +266,8 @@ class MainWindow(QMainWindow):
 
     def _mostrar_valores_con_diferencias(
         self,
-        valor_anterior,
-        valor_nuevo,
+        valor_1,
+        valor_2,
     ):
         """
         Muestra los valores anterior y nuevo resaltando
@@ -214,14 +276,14 @@ class MainWindow(QMainWindow):
 
         texto_anterior = (
             ""
-            if valor_anterior is None
-            else str(valor_anterior)
+            if valor_1 is None
+            else str(valor_1)
         )
 
         texto_nuevo = (
             ""
-            if valor_nuevo is None
-            else str(valor_nuevo)
+            if valor_2 is None
+            else str(valor_2)
         )
 
         # Si ambos valores son iguales, no hay nada que resaltar.
@@ -256,6 +318,52 @@ class MainWindow(QMainWindow):
         self.ui.textEditValor2.setHtml(
             html_nuevo
         )
+
+    def _crear_tabla_filtrable(self):
+        """
+        Sustituye el QTableView definido en Qt Designer
+        por QFilterableTableView.
+
+        El widget original se conserva hasta comprobar
+        que el nuevo funciona correctamente.
+        """
+
+        tabla_original = self.ui.tableViewCambios
+
+        tabla_filtrable = QFilterableTableView(
+            tabla_original.parent()
+        )
+
+        tabla_filtrable.setObjectName(
+            "tableViewCambios"
+        )
+
+        # Mantener algunas propiedades visuales
+        tabla_filtrable.setMinimumSize(
+            tabla_original.minimumSize()
+        )
+
+        tabla_filtrable.setSizePolicy(
+            tabla_original.sizePolicy()
+        )
+
+        tabla_filtrable.setAlternatingRowColors(
+            tabla_original.alternatingRowColors()
+        )
+
+        # Sustituir el widget dentro del layout
+        layout = tabla_original.parentWidget().layout()
+
+        if layout is not None:
+            layout.replaceWidget(
+                tabla_original,
+                tabla_filtrable
+            )
+
+        tabla_original.deleteLater()
+
+        # Actualizamos la referencia generada por Qt Designer
+        self.ui.tableViewCambios = tabla_filtrable
 
     # =========================================================
     # ARCHIVO 1
@@ -669,29 +777,44 @@ class MainWindow(QMainWindow):
             "Comparación completada correctamente."
         )
 
+    def _obtener_fila_modelo_origen(self, index):
+        """
+        Obtiene la fila correspondiente al ModeloCambios
+        partiendo del índice de la tabla filtrable.
+        """
+
+        indice = index
+
+        while indice.isValid():
+
+            modelo = indice.model()
+
+            if modelo is self.modelo_cambios:
+                return indice.row()
+
+            if hasattr(modelo, "mapToSource"):
+
+                indice = modelo.mapToSource(indice)
+
+            else:
+                break
+
+        return -1
+
     def mostrar_detalle_cambio(self, index):
-        """
-        Muestra el detalle del cambio seleccionado.
-        """
 
         if not index.isValid():
             return
 
-        # El índice pertenece al modelo filtrado
-        indice_fuente = (
-            self.modelo_filtrado.mapToSource(index)
-        )
+        fila = self._obtener_fila_modelo_origen(index)
 
-        cambio = self.modelo_cambios.obtener_cambio(
-            indice_fuente.row()
-        )
+        if fila < 0:
+            return
+
+        cambio = self.modelo_cambios.obtener_cambio(fila)
 
         if cambio is None:
             return
-
-        # ---------------------------------------------------------
-        # Valores
-        # ---------------------------------------------------------
 
         self._mostrar_valores_con_diferencias(
             cambio.valor_1,
