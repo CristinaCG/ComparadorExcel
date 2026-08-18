@@ -26,21 +26,26 @@ class Cambio:
     ----------
     clave:
         Identificador del registro.
+
     tipo:
         NUEVO, ELIMINADO o MODIFICADO.
+
     columna:
         Columna donde se produce el cambio.
-    valor_anterior:
+        Para NUEVO y ELIMINADO será None.
+
+    valor_1:
         Valor existente en el Excel anterior.
-    valor_nuevo:
+
+    valor_2:
         Valor existente en el Excel nuevo.
     """
 
     clave: str
     tipo: str
-    columna: str
-    valor_anterior: object
-    valor_nuevo: object
+    columna: str | None
+    valor_1: object
+    valor_2: object
 
 
 def comparar_dataframes(
@@ -52,35 +57,11 @@ def comparar_dataframes(
     """
     Compara dos DataFrames utilizando una o varias columnas como clave.
 
-    Parameters
-    ----------
-    anterior:
-        DataFrame correspondiente a la versión anterior.
+    Los registros NUEVOS y ELIMINADOS generan un único Cambio
+    por registro.
 
-    nuevo:
-        DataFrame correspondiente a la versión nueva.
-
-    columnas_clave:
-        Columnas que identifican un registro.
-
-    columnas_comparar:
-        Columnas cuyos valores se quieren comparar.
-
-    Returns
-    -------
-    list[Cambio]
-        Lista de cambios detectados.
-
-    Raises
-    ------
-    ValueError
-        Si no se especifica ninguna columna clave.
-
-    ClaveDuplicadaError
-        Si la combinación de columnas clave no es única.
-
-    ColumnaNoEncontradaError
-        Si alguna columna especificada no existe.
+    Los registros MODIFICADOS generan un Cambio por cada
+    columna cuyo valor haya cambiado.
     """
 
     # ---------------------------------------------------------
@@ -201,52 +182,48 @@ def comparar_dataframes(
     cambios: list[Cambio] = []
 
     # ---------------------------------------------------------
-    # REGISTROS NUEVOS
+    # INDEXAR REGISTROS
     # ---------------------------------------------------------
 
     nuevo_indexado = nuevo.set_index(
         "_clave_comparacion"
     )
 
+    anterior_indexado = anterior.set_index(
+        "_clave_comparacion"
+    )
+
+    # ---------------------------------------------------------
+    # REGISTROS NUEVOS
+    # ---------------------------------------------------------
+
     for clave in sorted(claves_nuevas):
 
-        fila_nueva = nuevo_indexado.loc[clave]
-
-        for columna in columnas_comparar:
-
-            cambios.append(
-                Cambio(
-                    clave=clave,
-                    tipo="NUEVO",
-                    columna=columna,
-                    valor_anterior=None,
-                    valor_nuevo=fila_nueva[columna],
-                )
+        cambios.append(
+            Cambio(
+                clave=clave,
+                tipo="NUEVO",
+                columna=None,
+                valor_1=None,
+                valor_2=None,
             )
+        )
 
     # ---------------------------------------------------------
     # REGISTROS ELIMINADOS
     # ---------------------------------------------------------
 
-    anterior_indexado = anterior.set_index(
-        "_clave_comparacion"
-    )
-
     for clave in sorted(claves_eliminadas):
 
-        fila_anterior = anterior_indexado.loc[clave]
-
-        for columna in columnas_comparar:
-
-            cambios.append(
-                Cambio(
-                    clave=clave,
-                    tipo="ELIMINADO",
-                    columna=columna,
-                    valor_anterior=fila_anterior[columna],
-                    valor_nuevo=None,
-                )
+        cambios.append(
+            Cambio(
+                clave=clave,
+                tipo="ELIMINADO",
+                columna=None,
+                valor_1=None,
+                valor_2=None,
             )
+        )
 
     # ---------------------------------------------------------
     # REGISTROS EXISTENTES
@@ -259,20 +236,20 @@ def comparar_dataframes(
 
         for columna in columnas_comparar:
 
-            valor_anterior = fila_anterior[columna]
-            valor_nuevo = fila_nueva[columna]
+            valor_1 = fila_anterior[columna]
+            valor_2 = fila_nueva[columna]
 
             if not _valores_iguales(
-                valor_anterior,
-                valor_nuevo,
+                valor_1,
+                valor_2,
             ):
                 cambios.append(
                     Cambio(
                         clave=clave,
                         tipo="MODIFICADO",
                         columna=columna,
-                        valor_anterior=valor_anterior,
-                        valor_nuevo=valor_nuevo,
+                        valor_1=valor_1,
+                        valor_2=valor_2,
                     )
                 )
 
@@ -314,8 +291,8 @@ def _validar_claves_unicas(
 
 
 def _valores_iguales(
-    valor_anterior: object,
-    valor_nuevo: object,
+    valor_1: object,
+    valor_2: object,
 ) -> bool:
     """
     Compara dos valores teniendo en cuenta:
@@ -326,8 +303,8 @@ def _valores_iguales(
     - textos
     """
 
-    anterior_es_nulo = pd.isna(valor_anterior)
-    nuevo_es_nulo = pd.isna(valor_nuevo)
+    anterior_es_nulo = pd.isna(valor_1)
+    nuevo_es_nulo = pd.isna(valor_2)
 
     # Ambos están vacíos
     if anterior_es_nulo and nuevo_es_nulo:
@@ -341,27 +318,27 @@ def _valores_iguales(
     # NÚMEROS
     # ---------------------------------------------------------
 
-    if _es_numero(valor_anterior) and _es_numero(valor_nuevo):
-        return float(valor_anterior) == float(valor_nuevo)
+    if _es_numero(valor_1) and _es_numero(valor_2):
+        return float(valor_1) == float(valor_2)
 
     # ---------------------------------------------------------
     # FECHAS
     # ---------------------------------------------------------
 
     if isinstance(
-        valor_anterior,
-        (pd.Timestamp,),
+        valor_1,
+        pd.Timestamp,
     ) and isinstance(
-        valor_nuevo,
-        (pd.Timestamp,),
+        valor_2,
+        pd.Timestamp,
     ):
-        return valor_anterior == valor_nuevo
+        return valor_1 == valor_2
 
     # ---------------------------------------------------------
     # RESTO DE VALORES
     # ---------------------------------------------------------
 
-    return valor_anterior == valor_nuevo
+    return valor_1 == valor_2
 
 
 def _es_numero(valor: object) -> bool:

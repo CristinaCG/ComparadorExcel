@@ -39,7 +39,11 @@ def test_comparar_registros():
         ],
     )
 
-    assert len(cambios) == 5
+    # ---------------------------------------------------------
+    # TOTAL
+    # ---------------------------------------------------------
+
+    assert len(cambios) == 3
 
     # ---------------------------------------------------------
     # A004 -> NUEVO
@@ -51,12 +55,14 @@ def test_comparar_registros():
         if cambio.clave == "A004"
     ]
 
-    assert len(cambios_a004) == 2
+    assert len(cambios_a004) == 1
 
-    assert all(
-        cambio.tipo == "NUEVO"
-        for cambio in cambios_a004
-    )
+    cambio = cambios_a004[0]
+
+    assert cambio.tipo == "NUEVO"
+    assert cambio.columna is None
+    assert cambio.valor_1 is None
+    assert cambio.valor_2 is None
 
     # ---------------------------------------------------------
     # A003 -> ELIMINADO
@@ -68,12 +74,14 @@ def test_comparar_registros():
         if cambio.clave == "A003"
     ]
 
-    assert len(cambios_a003) == 2
+    assert len(cambios_a003) == 1
 
-    assert all(
-        cambio.tipo == "ELIMINADO"
-        for cambio in cambios_a003
-    )
+    cambio = cambios_a003[0]
+
+    assert cambio.tipo == "ELIMINADO"
+    assert cambio.columna is None
+    assert cambio.valor_1 is None
+    assert cambio.valor_2 is None
 
     # ---------------------------------------------------------
     # A001 -> MODIFICADO
@@ -91,8 +99,8 @@ def test_comparar_registros():
 
     assert cambio.tipo == "MODIFICADO"
     assert cambio.columna == "Peso"
-    assert cambio.valor_anterior == 10
-    assert cambio.valor_nuevo == 12
+    assert cambio.valor_1 == 10
+    assert cambio.valor_2 == 12
 
     # ---------------------------------------------------------
     # A002 -> SIN CAMBIOS
@@ -191,8 +199,8 @@ def test_comparar_con_clave_compuesta():
     assert cambio.clave == "A001|2"
     assert cambio.tipo == "MODIFICADO"
     assert cambio.columna == "Descripcion"
-    assert cambio.valor_anterior == "Cable 2"
-    assert cambio.valor_nuevo == "Cable 2 modificado"
+    assert cambio.valor_1 == "Cable 2"
+    assert cambio.valor_2 == "Cable 2 modificado"
 
 def test_valores_nulos_no_generan_cambio():
 
@@ -240,8 +248,8 @@ def test_valor_nulo_a_valor():
 
     assert cambio.tipo == "MODIFICADO"
     assert cambio.columna == "Peso"
-    assert pd.isna(cambio.valor_anterior)
-    assert cambio.valor_nuevo == 25
+    assert pd.isna(cambio.valor_1)
+    assert cambio.valor_2 == 25
 
 def test_numeros_equivalentes_no_generan_cambio():
 
@@ -284,3 +292,90 @@ def test_texto_y_numero_son_diferentes():
     )
 
     assert len(cambios) == 1
+
+def test_registro_nuevo_genera_un_solo_cambio():
+
+    anterior = pd.DataFrame({
+        "Codigo": ["A001"],
+        "Descripcion": ["Cable A"],
+        "Peso": [10],
+        "Diametro": [8.2],
+    })
+
+    nuevo = pd.DataFrame({
+        "Codigo": ["A001", "A002"],
+        "Descripcion": [
+            "Cable A",
+            "Cable B",
+        ],
+        "Peso": [10, 20],
+        "Diametro": [8.2, 10.5],
+    })
+
+    cambios = comparar_dataframes(
+        anterior,
+        nuevo,
+        columnas_clave=["Codigo"],
+        columnas_comparar=[
+            "Descripcion",
+            "Peso",
+            "Diametro",
+        ],
+    )
+
+    cambios_nuevo = [
+        cambio
+        for cambio in cambios
+        if cambio.clave == "A002"
+    ]
+
+    assert len(cambios_nuevo) == 1
+
+    cambio = cambios_nuevo[0]
+
+    assert cambio.tipo == "NUEVO"
+    assert cambio.columna is None
+
+
+def test_registro_eliminado_genera_un_solo_cambio():
+
+    anterior = pd.DataFrame({
+        "Codigo": ["A001", "A002"],
+        "Descripcion": [
+            "Cable A",
+            "Cable B",
+        ],
+        "Peso": [10, 20],
+        "Diametro": [8.2, 10.5],
+    })
+
+    nuevo = pd.DataFrame({
+        "Codigo": ["A001"],
+        "Descripcion": ["Cable A"],
+        "Peso": [10],
+        "Diametro": [8.2],
+    })
+
+    cambios = comparar_dataframes(
+        anterior,
+        nuevo,
+        columnas_clave=["Codigo"],
+        columnas_comparar=[
+            "Descripcion",
+            "Peso",
+            "Diametro",
+        ],
+    )
+
+    cambios_eliminado = [
+        cambio
+        for cambio in cambios
+        if cambio.clave == "A002"
+    ]
+
+    assert len(cambios_eliminado) == 1
+
+    cambio = cambios_eliminado[0]
+
+    assert cambio.tipo == "ELIMINADO"
+    assert cambio.columna is None
