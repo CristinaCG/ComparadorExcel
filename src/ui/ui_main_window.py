@@ -18,21 +18,27 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QComboBox, QGridLayout,
     QGroupBox, QHBoxLayout, QHeaderView, QLabel,
     QLineEdit, QListWidget, QListWidgetItem, QMainWindow,
-    QMenuBar, QPushButton, QSizePolicy, QStatusBar,
+    QMenuBar, QPushButton, QSizePolicy, QTabWidget,
     QTableView, QTextEdit, QVBoxLayout, QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(800, 909)
+        MainWindow.resize(800, 600)
         MainWindow.setMinimumSize(QSize(800, 600))
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.centralwidget.setMinimumSize(QSize(0, 0))
-        self.verticalLayout_2 = QVBoxLayout(self.centralwidget)
+        self.verticalLayout_3 = QVBoxLayout(self.centralwidget)
+        self.verticalLayout_3.setObjectName(u"verticalLayout_3")
+        self.tabWidget = QTabWidget(self.centralwidget)
+        self.tabWidget.setObjectName(u"tabWidget")
+        self.tab_comparar = QWidget()
+        self.tab_comparar.setObjectName(u"tab_comparar")
+        self.verticalLayout_2 = QVBoxLayout(self.tab_comparar)
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
-        self.groupBoxArchivos = QGroupBox(self.centralwidget)
+        self.groupBoxArchivos = QGroupBox(self.tab_comparar)
         self.groupBoxArchivos.setObjectName(u"groupBoxArchivos")
         self.groupBoxArchivos.setMinimumSize(QSize(0, 0))
         self.gridLayout = QGridLayout(self.groupBoxArchivos)
@@ -115,7 +121,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_2.addWidget(self.groupBoxArchivos)
 
-        self.groupBoxConfiguracion = QGroupBox(self.centralwidget)
+        self.groupBoxConfiguracion = QGroupBox(self.tab_comparar)
         self.groupBoxConfiguracion.setObjectName(u"groupBoxConfiguracion")
         self.horizontalLayout_6 = QHBoxLayout(self.groupBoxConfiguracion)
         self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")
@@ -168,14 +174,24 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_2.addWidget(self.groupBoxConfiguracion)
 
-        self.pushButtonComparar = QPushButton(self.centralwidget)
+        self.pushButtonComparar = QPushButton(self.tab_comparar)
         self.pushButtonComparar.setObjectName(u"pushButtonComparar")
 
         self.verticalLayout_2.addWidget(self.pushButtonComparar)
 
-        self.tableViewCambios = QTableView(self.centralwidget)
+        self.tabWidget.addTab(self.tab_comparar, "")
+        self.tab_resultados = QWidget()
+        self.tab_resultados.setObjectName(u"tab_resultados")
+        self.verticalLayout_8 = QVBoxLayout(self.tab_resultados)
+        self.verticalLayout_8.setObjectName(u"verticalLayout_8")
+        self.labelResumen = QLabel(self.tab_resultados)
+        self.labelResumen.setObjectName(u"labelResumen")
+
+        self.verticalLayout_8.addWidget(self.labelResumen)
+
+        self.tableViewCambios = QTableView(self.tab_resultados)
         self.tableViewCambios.setObjectName(u"tableViewCambios")
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.tableViewCambios.sizePolicy().hasHeightForWidth())
@@ -184,68 +200,72 @@ class Ui_MainWindow(object):
         self.tableViewCambios.horizontalHeader().setStretchLastSection(True)
         self.tableViewCambios.verticalHeader().setStretchLastSection(True)
 
-        self.verticalLayout_2.addWidget(self.tableViewCambios)
+        self.verticalLayout_8.addWidget(self.tableViewCambios)
 
-        self.groupBoxDetalle = QGroupBox(self.centralwidget)
+        self.groupBoxDetalle = QGroupBox(self.tab_resultados)
         self.groupBoxDetalle.setObjectName(u"groupBoxDetalle")
-        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Minimum)
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         sizePolicy1.setHorizontalStretch(0)
         sizePolicy1.setVerticalStretch(0)
         sizePolicy1.setHeightForWidth(self.groupBoxDetalle.sizePolicy().hasHeightForWidth())
         self.groupBoxDetalle.setSizePolicy(sizePolicy1)
-        self.groupBoxDetalle.setMinimumSize(QSize(782, 100))
+        self.groupBoxDetalle.setMinimumSize(QSize(0, 100))
         self.horizontalLayout_9 = QHBoxLayout(self.groupBoxDetalle)
         self.horizontalLayout_9.setObjectName(u"horizontalLayout_9")
-        self.verticalLayout_4 = QVBoxLayout()
-        self.verticalLayout_4.setObjectName(u"verticalLayout_4")
+        self.verticalLayout_Valor1 = QVBoxLayout()
+        self.verticalLayout_Valor1.setObjectName(u"verticalLayout_Valor1")
         self.labelValor1 = QLabel(self.groupBoxDetalle)
         self.labelValor1.setObjectName(u"labelValor1")
 
-        self.verticalLayout_4.addWidget(self.labelValor1)
+        self.verticalLayout_Valor1.addWidget(self.labelValor1)
 
         self.textEditValor1 = QTextEdit(self.groupBoxDetalle)
         self.textEditValor1.setObjectName(u"textEditValor1")
         self.textEditValor1.setReadOnly(True)
 
-        self.verticalLayout_4.addWidget(self.textEditValor1)
+        self.verticalLayout_Valor1.addWidget(self.textEditValor1)
 
 
-        self.horizontalLayout_9.addLayout(self.verticalLayout_4)
+        self.horizontalLayout_9.addLayout(self.verticalLayout_Valor1)
 
-        self.verticalLayout_3 = QVBoxLayout()
-        self.verticalLayout_3.setObjectName(u"verticalLayout_3")
+        self.verticalLayout_Valor2 = QVBoxLayout()
+        self.verticalLayout_Valor2.setObjectName(u"verticalLayout_Valor2")
         self.labelValor2 = QLabel(self.groupBoxDetalle)
         self.labelValor2.setObjectName(u"labelValor2")
 
-        self.verticalLayout_3.addWidget(self.labelValor2)
+        self.verticalLayout_Valor2.addWidget(self.labelValor2)
 
         self.textEditValor2 = QTextEdit(self.groupBoxDetalle)
         self.textEditValor2.setObjectName(u"textEditValor2")
         self.textEditValor2.setReadOnly(True)
 
-        self.verticalLayout_3.addWidget(self.textEditValor2)
+        self.verticalLayout_Valor2.addWidget(self.textEditValor2)
 
 
-        self.horizontalLayout_9.addLayout(self.verticalLayout_3)
+        self.horizontalLayout_9.addLayout(self.verticalLayout_Valor2)
 
 
-        self.verticalLayout_2.addWidget(self.groupBoxDetalle)
+        self.verticalLayout_8.addWidget(self.groupBoxDetalle)
 
-        self.labelResumen = QLabel(self.centralwidget)
-        self.labelResumen.setObjectName(u"labelResumen")
+        self.verticalLayout_8.setStretch(1, 3)
+        self.verticalLayout_8.setStretch(2, 1)
+        self.tabWidget.addTab(self.tab_resultados, "")
+        self.tab_historico = QWidget()
+        self.tab_historico.setObjectName(u"tab_historico")
+        self.tabWidget.addTab(self.tab_historico, "")
 
-        self.verticalLayout_2.addWidget(self.labelResumen)
+        self.verticalLayout_3.addWidget(self.tabWidget)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
         self.menubar.setGeometry(QRect(0, 0, 800, 23))
         MainWindow.setMenuBar(self.menubar)
-        self.statusbar = QStatusBar(MainWindow)
-        self.statusbar.setObjectName(u"statusbar")
-        MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
+
+        self.tabWidget.setCurrentIndex(0)
+
 
         QMetaObject.connectSlotsByName(MainWindow)
     # setupUi
@@ -265,9 +285,12 @@ class Ui_MainWindow(object):
         self.groupBoxColumnasComparar.setTitle(QCoreApplication.translate("MainWindow", u"Columnas a comparar", None))
         self.lineEditBuscarComparar.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Buscar columna...", None))
         self.pushButtonComparar.setText(QCoreApplication.translate("MainWindow", u"Comparar archivos", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_comparar), QCoreApplication.translate("MainWindow", u"Comparar", None))
+        self.labelResumen.setText(QCoreApplication.translate("MainWindow", u"0 cambios encontrados", None))
         self.groupBoxDetalle.setTitle(QCoreApplication.translate("MainWindow", u"Detalle del cambio", None))
         self.labelValor1.setText(QCoreApplication.translate("MainWindow", u"Valor 1", None))
         self.labelValor2.setText(QCoreApplication.translate("MainWindow", u"Valor 2", None))
-        self.labelResumen.setText(QCoreApplication.translate("MainWindow", u"0 cambios encontrados", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_resultados), QCoreApplication.translate("MainWindow", u"Resultados", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_historico), QCoreApplication.translate("MainWindow", u"Hist\u00f3rico", None))
     # retranslateUi
 

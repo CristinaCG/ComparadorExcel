@@ -766,6 +766,10 @@ class MainWindow(QMainWindow):
 
         self.modelo_cambios.actualizar(cambios)
 
+        self.ui.tabWidget.setCurrentWidget(
+            self.ui.tab_resultados
+        )
+        
         self.ui.labelResumen.setText(
             f"{len(cambios)} cambios encontrados"
         )
