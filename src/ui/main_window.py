@@ -8,11 +8,16 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QFileDialog,
     QMessageBox,
+    QInputDialog,
 )
+
+from src.database.repositorio import RepositorioSQLite
 
 from qextrawidgets.widgets.views import QFilterableTableView
 
 from src.ui.ui_main_window import Ui_MainWindow
+
+from src.ui.modelo_historico import ModeloHistorico
 
 # from src.ui.filtro_tabla import (
 #     ModeloFiltradoCambios,
@@ -47,6 +52,19 @@ class MainWindow(QMainWindow):
         self.ui.tableViewCambios.setModel(
             self.modelo_cambios
         )
+
+        self.modelo_historico = ModeloHistorico()
+
+        self.ui.tableViewHistorico.setModel(
+            self.modelo_historico
+        )
+
+        self.ui.tableViewHistorico.setSortingEnabled(
+            True
+        )
+
+        self.ruta_historico = None
+        self.repositorio_historico = None
 
         # self.modelo_cambios = ModeloCambios()
 
@@ -143,6 +161,22 @@ class MainWindow(QMainWindow):
             self.mostrar_detalle_cambio
         )
 
+        self.ui.pushButtonGuardarComparacion.clicked.connect(
+            self.guardar_comparacion
+        )
+
+        self.ui.pushButtonAbrirHistorico.clicked.connect(
+            self.abrir_historico
+        )
+
+        self.ui.pushButtonEliminarComparacion.clicked.connect(
+            self.eliminar_comparacion_historico
+        )
+
+        self.ui.lineEditBuscarHistorico.textChanged.connect(
+            self.filtrar_historico
+        )
+                
     def _filtrar_lista(
         self,
         lista,
@@ -650,13 +684,13 @@ class MainWindow(QMainWindow):
 
         if mensajes:
 
-            self.ui.statusbar.showMessage(
+            self.ui.statusBar.showMessage(
                 " | ".join(mensajes)
             )
 
         else:
 
-            self.ui.statusbar.showMessage(
+            self.ui.statusBar.showMessage(
                 "Las estructuras de ambos Excel coinciden."
             )
 
@@ -769,7 +803,6 @@ class MainWindow(QMainWindow):
         self.ui.tabWidget.setCurrentWidget(
             self.ui.tab_resultados
         )
-        
         self.ui.labelResumen.setText(
             f"{len(cambios)} cambios encontrados"
         )
@@ -777,7 +810,7 @@ class MainWindow(QMainWindow):
         # Ajustar columnas
         self.ui.tableViewCambios.resizeColumnsToContents()
 
-        self.ui.statusbar.showMessage(
+        self.ui.statusBar.showMessage(
             "Comparación completada correctamente."
         )
 
@@ -824,3 +857,318 @@ class MainWindow(QMainWindow):
             cambio.valor_1,
             cambio.valor_2,
         )
+
+    def guardar_comparacion(self):
+        """
+        Guarda la comparación actual en una base de datos SQLite.
+
+        El usuario puede:
+        - Crear una nueva base de datos.
+        - Añadir la comparación a una base existente.
+        """
+
+        # =========================================================
+        # COMPROBAR QUE EXISTE UNA COMPARACIÓN
+        # =========================================================
+
+        if not self.modelo_cambios.cambios:
+
+            QMessageBox.warning(
+                self,
+                "Sin comparación",
+                "Primero debes realizar una comparación.",
+            )
+
+            return
+
+        # =========================================================
+        # ELEGIR DESTINO
+        # =========================================================
+
+        respuesta = QMessageBox.question(
+            self,
+            "Guardar comparación",
+            "¿Cómo deseas guardar la comparación?",
+            buttons=(
+                QMessageBox.StandardButton.Yes
+                | QMessageBox.StandardButton.No
+                | QMessageBox.StandardButton.Cancel
+            ),
+        )
+
+        # ---------------------------------------------------------
+        # Sí = crear nueva
+        # No = utilizar existente
+        # Cancelar = salir
+        # ---------------------------------------------------------
+
+        if respuesta == QMessageBox.StandardButton.Cancel:
+            return
+
+        # =========================================================
+        # CREAR NUEVA SQLITE
+        # =========================================================
+
+        if respuesta == QMessageBox.StandardButton.Yes:
+
+            ruta, _ = QFileDialog.getSaveFileName(
+                self,
+                "Crear base de datos SQLite",
+                "",
+                "Base de datos SQLite (*.sqlite *.db)",
+            )
+
+            if not ruta:
+                return
+
+        # =========================================================
+        # UTILIZAR SQLITE EXISTENTE
+        # =========================================================
+
+        else:
+
+            ruta, _ = QFileDialog.getOpenFileName(
+                self,
+                "Seleccionar base de datos SQLite",
+                "",
+                "Base de datos SQLite (*.sqlite *.db)",
+            )
+
+            if not ruta:
+                return
+
+        # =========================================================
+        # PEDIR IDENTIFICADOR
+        # =========================================================
+
+        identificador, aceptado = QInputDialog.getText(
+            self,
+            "Identificador de comparación",
+            "Introduce el identificador de esta comparación:",
+        )
+
+        if not aceptado:
+            return
+
+        identificador = identificador.strip()
+
+        if not identificador:
+
+            QMessageBox.warning(
+                self,
+                "Identificador vacío",
+                "Debes introducir un identificador.",
+            )
+
+            return
+
+        # =========================================================
+        # OBTENER CONFIGURACIÓN ACTUAL
+        # =========================================================
+
+        columnas_clave = [
+            item.text()
+            for item in self.ui.listaColumnasClave.selectedItems()
+        ]
+
+        columnas_comparar = [
+            item.text()
+            for item in self.ui.listaColumnasComparar.selectedItems()
+        ]
+
+        archivo_anterior = self.ui.lineEditArchivo1.text()
+        archivo_nuevo = self.ui.lineEditArchivo2.text()
+
+        hoja_anterior = self.ui.comboBoxHoja1.currentText()
+        hoja_nueva = self.ui.comboBoxHoja2.currentText()
+
+        # =========================================================
+        # GUARDAR
+        # =========================================================
+
+        try:
+
+            repositorio = RepositorioSQLite(ruta)
+
+            comparacion_id = repositorio.guardar_comparacion(
+                identificador=identificador,
+                archivo_anterior=archivo_anterior,
+                archivo_nuevo=archivo_nuevo,
+                hoja_anterior=hoja_anterior,
+                hoja_nueva=hoja_nueva,
+                columnas_clave=columnas_clave,
+                columnas_comparadas=columnas_comparar,
+                cambios=self.modelo_cambios.cambios,
+            )
+
+        except Exception as error:
+
+            QMessageBox.critical(
+                self,
+                "Error al guardar",
+                "No se ha podido guardar la comparación:\n\n"
+                f"{error}",
+            )
+
+            return
+
+        # =========================================================
+        # CONFIRMACIÓN
+        # =========================================================
+
+        QMessageBox.information(
+            self,
+            "Comparación guardada",
+            "La comparación se ha guardado correctamente.\n\n"
+            f"Identificador: {identificador}\n"
+            f"Cambios guardados: {len(self.modelo_cambios.cambios)}\n"
+            f"Base de datos:\n{ruta}",
+        )
+
+        self.ui.statusbar.showMessage(
+            f"Comparación guardada: {identificador}"
+        )
+
+    def abrir_historico(self):
+
+        ruta, _ = QFileDialog.getOpenFileName(
+            self,
+            "Seleccionar base de datos SQLite",
+            "",
+            "Base de datos SQLite (*.sqlite *.db)",
+        )
+
+        if not ruta:
+            return
+
+        try:
+
+            from src.database.repositorio import (
+                RepositorioSQLite,
+            )
+
+            repositorio = RepositorioSQLite(ruta)
+
+            comparaciones = (
+                repositorio.obtener_comparaciones()
+            )
+
+            self.ruta_historico = ruta
+            self.repositorio_historico = repositorio
+
+            self.modelo_historico.actualizar(
+                comparaciones
+            )
+
+            self.ui.lineEditBaseHistorico.setText(
+                ruta
+            )
+
+            self.ui.tableViewHistorico.resizeColumnsToContents()
+
+            self.ui.statusbar.showMessage(
+                "Histórico cargado correctamente."
+            )
+
+        except Exception as error:
+
+            QMessageBox.critical(
+                self,
+                "Error",
+                f"No se ha podido abrir la base de datos:\n\n{error}",
+            )
+
+    def filtrar_historico(self, texto):
+
+        texto = texto.strip().lower()
+
+        if not texto:
+
+            self.modelo_historico.actualizar(
+                self.repositorio_historico.obtener_comparaciones()
+            )
+
+            return
+
+        comparaciones = [
+            comparacion
+            for comparacion in self.repositorio_historico.obtener_comparaciones()
+            if texto in str(
+                comparacion["identificador"]
+            ).lower()
+            or texto in str(
+                comparacion["archivo_anterior"]
+            ).lower()
+            or texto in str(
+                comparacion["archivo_nuevo"]
+            ).lower()
+        ]
+
+        self.modelo_historico.actualizar(
+            comparaciones
+        )
+
+    def eliminar_comparacion_historico(self):
+
+        index = (
+            self.ui.tableViewHistorico
+            .currentIndex()
+        )
+
+        if not index.isValid():
+            QMessageBox.warning(
+                self,
+                "Sin selección",
+                "Selecciona una comparación.",
+            )
+            return
+
+        comparacion = (
+            self.modelo_historico.obtener_comparacion(
+                index.row()
+            )
+        )
+
+        respuesta = QMessageBox.question(
+            self,
+            "Eliminar comparación",
+            (
+                "¿Deseas eliminar la comparación?\n\n"
+                f"{comparacion['identificador']}"
+            ),
+            QMessageBox.StandardButton.Yes
+            | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+
+        if respuesta != QMessageBox.StandardButton.Yes:
+            return
+
+        try:
+
+            self.repositorio_historico.eliminar_comparacion(
+                comparacion["id"]
+            )
+
+            comparaciones = (
+                self.repositorio_historico
+                .obtener_comparaciones()
+            )
+
+            self.modelo_historico.actualizar(
+                comparaciones
+            )
+
+            self.ui.statusbar.showMessage(
+                "Comparación eliminada."
+            )
+
+        except Exception as error:
+
+            QMessageBox.critical(
+                self,
+                "Error",
+                f"No se ha podido eliminar:\n\n{error}",
+            )
+
+        

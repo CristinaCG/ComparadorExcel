@@ -18,20 +18,20 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QComboBox, QGridLayout,
     QGroupBox, QHBoxLayout, QHeaderView, QLabel,
     QLineEdit, QListWidget, QListWidgetItem, QMainWindow,
-    QMenuBar, QPushButton, QSizePolicy, QTabWidget,
+    QPushButton, QSizePolicy, QStatusBar, QTabWidget,
     QTableView, QTextEdit, QVBoxLayout, QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(800, 600)
+        MainWindow.resize(807, 737)
         MainWindow.setMinimumSize(QSize(800, 600))
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.centralwidget.setMinimumSize(QSize(0, 0))
-        self.verticalLayout_3 = QVBoxLayout(self.centralwidget)
-        self.verticalLayout_3.setObjectName(u"verticalLayout_3")
+        self.horizontalLayout_10 = QHBoxLayout(self.centralwidget)
+        self.horizontalLayout_10.setObjectName(u"horizontalLayout_10")
         self.tabWidget = QTabWidget(self.centralwidget)
         self.tabWidget.setObjectName(u"tabWidget")
         self.tab_comparar = QWidget()
@@ -182,33 +182,57 @@ class Ui_MainWindow(object):
         self.tabWidget.addTab(self.tab_comparar, "")
         self.tab_resultados = QWidget()
         self.tab_resultados.setObjectName(u"tab_resultados")
-        self.verticalLayout_8 = QVBoxLayout(self.tab_resultados)
-        self.verticalLayout_8.setObjectName(u"verticalLayout_8")
+        self.verticalLayout_3 = QVBoxLayout(self.tab_resultados)
+        self.verticalLayout_3.setObjectName(u"verticalLayout_3")
+        self.verticalLayout_7 = QVBoxLayout()
+        self.verticalLayout_7.setObjectName(u"verticalLayout_7")
+        self.verticalLayout_4 = QVBoxLayout()
+        self.verticalLayout_4.setObjectName(u"verticalLayout_4")
+        self.horizontalLayout_3 = QHBoxLayout()
+        self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
+        self.pushButtonGuardarComparacion = QPushButton(self.tab_resultados)
+        self.pushButtonGuardarComparacion.setObjectName(u"pushButtonGuardarComparacion")
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.pushButtonGuardarComparacion.sizePolicy().hasHeightForWidth())
+        self.pushButtonGuardarComparacion.setSizePolicy(sizePolicy)
+        self.pushButtonGuardarComparacion.setMaximumSize(QSize(200, 16777215))
+
+        self.horizontalLayout_3.addWidget(self.pushButtonGuardarComparacion)
+
         self.labelResumen = QLabel(self.tab_resultados)
         self.labelResumen.setObjectName(u"labelResumen")
+        self.labelResumen.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
 
-        self.verticalLayout_8.addWidget(self.labelResumen)
+        self.horizontalLayout_3.addWidget(self.labelResumen)
+
+
+        self.verticalLayout_4.addLayout(self.horizontalLayout_3)
 
         self.tableViewCambios = QTableView(self.tab_resultados)
         self.tableViewCambios.setObjectName(u"tableViewCambios")
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.tableViewCambios.sizePolicy().hasHeightForWidth())
-        self.tableViewCambios.setSizePolicy(sizePolicy)
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.tableViewCambios.sizePolicy().hasHeightForWidth())
+        self.tableViewCambios.setSizePolicy(sizePolicy1)
         self.tableViewCambios.setMinimumSize(QSize(0, 100))
         self.tableViewCambios.horizontalHeader().setStretchLastSection(True)
         self.tableViewCambios.verticalHeader().setStretchLastSection(True)
 
-        self.verticalLayout_8.addWidget(self.tableViewCambios)
+        self.verticalLayout_4.addWidget(self.tableViewCambios)
+
+
+        self.verticalLayout_7.addLayout(self.verticalLayout_4)
 
         self.groupBoxDetalle = QGroupBox(self.tab_resultados)
         self.groupBoxDetalle.setObjectName(u"groupBoxDetalle")
-        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        sizePolicy1.setHorizontalStretch(0)
-        sizePolicy1.setVerticalStretch(0)
-        sizePolicy1.setHeightForWidth(self.groupBoxDetalle.sizePolicy().hasHeightForWidth())
-        self.groupBoxDetalle.setSizePolicy(sizePolicy1)
+        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        sizePolicy2.setHorizontalStretch(0)
+        sizePolicy2.setVerticalStretch(0)
+        sizePolicy2.setHeightForWidth(self.groupBoxDetalle.sizePolicy().hasHeightForWidth())
+        self.groupBoxDetalle.setSizePolicy(sizePolicy2)
         self.groupBoxDetalle.setMinimumSize(QSize(0, 100))
         self.horizontalLayout_9 = QHBoxLayout(self.groupBoxDetalle)
         self.horizontalLayout_9.setObjectName(u"horizontalLayout_9")
@@ -221,6 +245,7 @@ class Ui_MainWindow(object):
 
         self.textEditValor1 = QTextEdit(self.groupBoxDetalle)
         self.textEditValor1.setObjectName(u"textEditValor1")
+        self.textEditValor1.setMinimumSize(QSize(0, 100))
         self.textEditValor1.setReadOnly(True)
 
         self.verticalLayout_Valor1.addWidget(self.textEditValor1)
@@ -237,6 +262,7 @@ class Ui_MainWindow(object):
 
         self.textEditValor2 = QTextEdit(self.groupBoxDetalle)
         self.textEditValor2.setObjectName(u"textEditValor2")
+        self.textEditValor2.setMinimumSize(QSize(0, 100))
         self.textEditValor2.setReadOnly(True)
 
         self.verticalLayout_Valor2.addWidget(self.textEditValor2)
@@ -244,27 +270,50 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_9.addLayout(self.verticalLayout_Valor2)
 
+        self.horizontalLayout_9.setStretch(0, 2)
+        self.horizontalLayout_9.setStretch(1, 2)
 
-        self.verticalLayout_8.addWidget(self.groupBoxDetalle)
+        self.verticalLayout_7.addWidget(self.groupBoxDetalle)
 
-        self.verticalLayout_8.setStretch(1, 3)
-        self.verticalLayout_8.setStretch(2, 1)
+
+        self.verticalLayout_3.addLayout(self.verticalLayout_7)
+
         self.tabWidget.addTab(self.tab_resultados, "")
         self.tab_historico = QWidget()
         self.tab_historico.setObjectName(u"tab_historico")
+        self.labelBaseHistorico = QLabel(self.tab_historico)
+        self.labelBaseHistorico.setObjectName(u"labelBaseHistorico")
+        self.labelBaseHistorico.setGeometry(QRect(90, 60, 54, 14))
+        self.lineEditBaseHistorico = QLineEdit(self.tab_historico)
+        self.lineEditBaseHistorico.setObjectName(u"lineEditBaseHistorico")
+        self.lineEditBaseHistorico.setGeometry(QRect(70, 100, 113, 20))
+        self.pushButtonAbrirHistorico = QPushButton(self.tab_historico)
+        self.pushButtonAbrirHistorico.setObjectName(u"pushButtonAbrirHistorico")
+        self.pushButtonAbrirHistorico.setGeometry(QRect(210, 80, 82, 25))
+        self.labelBuscarHistorico = QLabel(self.tab_historico)
+        self.labelBuscarHistorico.setObjectName(u"labelBuscarHistorico")
+        self.labelBuscarHistorico.setGeometry(QRect(100, 130, 54, 14))
+        self.lineEditBuscarHistorico = QLineEdit(self.tab_historico)
+        self.lineEditBuscarHistorico.setObjectName(u"lineEditBuscarHistorico")
+        self.lineEditBuscarHistorico.setGeometry(QRect(200, 130, 113, 20))
+        self.pushButtonEliminarComparacion = QPushButton(self.tab_historico)
+        self.pushButtonEliminarComparacion.setObjectName(u"pushButtonEliminarComparacion")
+        self.pushButtonEliminarComparacion.setGeometry(QRect(180, 400, 82, 25))
+        self.tableViewHistorico = QTableView(self.tab_historico)
+        self.tableViewHistorico.setObjectName(u"tableViewHistorico")
+        self.tableViewHistorico.setGeometry(QRect(80, 170, 256, 192))
         self.tabWidget.addTab(self.tab_historico, "")
 
-        self.verticalLayout_3.addWidget(self.tabWidget)
+        self.horizontalLayout_10.addWidget(self.tabWidget)
 
         MainWindow.setCentralWidget(self.centralwidget)
-        self.menubar = QMenuBar(MainWindow)
-        self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 800, 23))
-        MainWindow.setMenuBar(self.menubar)
+        self.statusBar = QStatusBar(MainWindow)
+        self.statusBar.setObjectName(u"statusBar")
+        MainWindow.setStatusBar(self.statusBar)
 
         self.retranslateUi(MainWindow)
 
-        self.tabWidget.setCurrentIndex(0)
+        self.tabWidget.setCurrentIndex(2)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
@@ -286,11 +335,16 @@ class Ui_MainWindow(object):
         self.lineEditBuscarComparar.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Buscar columna...", None))
         self.pushButtonComparar.setText(QCoreApplication.translate("MainWindow", u"Comparar archivos", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_comparar), QCoreApplication.translate("MainWindow", u"Comparar", None))
+        self.pushButtonGuardarComparacion.setText(QCoreApplication.translate("MainWindow", u"Guardar comparaci\u00f3n", None))
         self.labelResumen.setText(QCoreApplication.translate("MainWindow", u"0 cambios encontrados", None))
         self.groupBoxDetalle.setTitle(QCoreApplication.translate("MainWindow", u"Detalle del cambio", None))
         self.labelValor1.setText(QCoreApplication.translate("MainWindow", u"Valor 1", None))
         self.labelValor2.setText(QCoreApplication.translate("MainWindow", u"Valor 2", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_resultados), QCoreApplication.translate("MainWindow", u"Resultados", None))
+        self.labelBaseHistorico.setText(QCoreApplication.translate("MainWindow", u"Base de datos:", None))
+        self.pushButtonAbrirHistorico.setText(QCoreApplication.translate("MainWindow", u"Abrir", None))
+        self.labelBuscarHistorico.setText(QCoreApplication.translate("MainWindow", u"Buscar comparaci\u00f3n:", None))
+        self.pushButtonEliminarComparacion.setText(QCoreApplication.translate("MainWindow", u"Eliminar comparaci\u00f3n", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_historico), QCoreApplication.translate("MainWindow", u"Hist\u00f3rico", None))
     # retranslateUi
 
