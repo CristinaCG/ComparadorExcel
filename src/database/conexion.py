@@ -18,8 +18,10 @@ def conectar(ruta: str | Path) -> sqlite3.Connection:
 
     conexion = sqlite3.connect(ruta)
 
-    conexion.execute("PRAGMA foreign_keys = ON")
-
     conexion.row_factory = sqlite3.Row
+
+    conexion.execute(
+        "PRAGMA foreign_keys = ON"
+    )
 
     return conexion

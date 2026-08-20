@@ -4,29 +4,62 @@ from PySide6.QtCore import (
     Qt,
 )
 
+from PySide6.QtGui import (
+    QColor,
+    QPalette,
+)
+
+from PySide6.QtWidgets import QApplication
+
+
+def _mezclar_color(
+    color_base,
+    color_cambio,
+    porcentaje,
+):
+    """
+    Mezcla un color de fondo con un color indicador.
+    """
+
+    r = int(
+        color_base.red() * (1 - porcentaje)
+        + color_cambio.red() * porcentaje
+    )
+
+    g = int(
+        color_base.green() * (1 - porcentaje)
+        + color_cambio.green() * porcentaje
+    )
+
+    b = int(
+        color_base.blue() * (1 - porcentaje)
+        + color_cambio.blue() * porcentaje
+    )
+
+    return QColor(r, g, b)
+
 
 class ModeloHistorico(QAbstractTableModel):
 
     COLUMNAS = [
-        "Fecha",
         "Identificador",
-        "Archivo anterior",
-        "Archivo nuevo",
-        "Hoja anterior",
-        "Hoja nueva",
-        "Cambios",
+        "Clave",
+        "Tipo",
+        "Columna",
+        # "Valor 1",
+        # "Valor 2",
     ]
 
-    def __init__(self):
+    def __init__(self, cambios=None):
         super().__init__()
 
-        self.comparaciones = []
+        self.cambios = list(cambios or [])
 
     def rowCount(
         self,
         parent=QModelIndex(),
     ):
-        return len(self.comparaciones)
+        return len(self.cambios)
 
     def columnCount(
         self,
@@ -43,29 +76,67 @@ class ModeloHistorico(QAbstractTableModel):
         if not index.isValid():
             return None
 
-        if role != Qt.ItemDataRole.DisplayRole:
-            return None
+        cambio = self.cambios[index.row()]
 
-        comparacion = self.comparaciones[
-            index.row()
-        ]
+        # =========================================================
+        # TEXTO
+        # =========================================================
 
-        valores = [
-            comparacion["fecha"],
-            comparacion["identificador"],
-            comparacion["archivo_anterior"],
-            comparacion["archivo_nuevo"],
-            comparacion["hoja_anterior"],
-            comparacion["hoja_nueva"],
-            comparacion.get("num_cambios", 0),
-        ]
+        if role == Qt.ItemDataRole.DisplayRole:
 
-        valor = valores[index.column()]
+            valores = [
+                cambio["identificador"],
+                cambio["clave"],
+                cambio["tipo"],
+                cambio["columna"],
+                # cambio["valor_1"],
+                # cambio["valor_2"],
+            ]
 
-        if valor is None:
-            return ""
+            valor = valores[index.column()]
 
-        return str(valor)
+            if valor is None:
+                return ""
+
+            return str(valor)
+
+        # =========================================================
+        # COLOR DE FONDO
+        # =========================================================
+
+        if role == Qt.ItemDataRole.BackgroundRole:
+
+            paleta = QApplication.palette()
+
+            fondo = paleta.color(
+                QPalette.ColorRole.Base
+            )
+
+            if cambio["tipo"] == "NUEVO":
+
+                return _mezclar_color(
+                    fondo,
+                    QColor(80, 180, 80),
+                    0.18,
+                )
+
+            if cambio["tipo"] == "ELIMINADO":
+
+                return _mezclar_color(
+                    fondo,
+                    QColor(220, 80, 80),
+                    0.18,
+                )
+
+            if cambio["tipo"] == "MODIFICADO":
+
+                return _mezclar_color(
+                    fondo,
+                    QColor(230, 190, 50),
+                    0.22,
+                )
+
+        return None
 
     def headerData(
         self,
@@ -78,26 +149,28 @@ class ModeloHistorico(QAbstractTableModel):
             return None
 
         if orientation == Qt.Orientation.Horizontal:
+
             return self.COLUMNAS[section]
 
         return str(section + 1)
 
     def actualizar(
         self,
-        comparaciones,
+        cambios,
     ):
 
         self.beginResetModel()
 
-        self.comparaciones = comparaciones
+        self.cambios = list(cambios)
 
         self.endResetModel()
 
-    def obtener_comparacion(
+    def obtener_cambio(
         self,
         fila: int,
     ):
-        if fila < 0 or fila >= len(self.comparaciones):
+
+        if fila < 0 or fila >= len(self.cambios):
             return None
 
-        return self.comparaciones[fila]
+        return self.cambios[fila]

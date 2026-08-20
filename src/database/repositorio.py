@@ -128,15 +128,19 @@ class RepositorioSQLite:
             cursor = conexion.execute(
                 """
                 SELECT
-                    id,
-                    identificador,
-                    fecha,
-                    archivo_anterior,
-                    archivo_nuevo,
-                    hoja_anterior,
-                    hoja_nueva
-                FROM comparaciones
-                ORDER BY fecha DESC
+                    c.id,
+                    c.identificador,
+                    c.fecha,
+                    c.archivo_anterior,
+                    c.archivo_nuevo,
+                    c.hoja_anterior,
+                    c.hoja_nueva,
+                    COUNT(ch.id) AS num_cambios
+                FROM comparaciones c
+                LEFT JOIN cambios ch
+                    ON ch.comparacion_id = c.id
+                GROUP BY c.id
+                ORDER BY c.fecha DESC
                 """
             )
 
@@ -211,6 +215,36 @@ class RepositorioSQLite:
                 ORDER BY id
                 """,
                 (comparacion_id,),
+            ).fetchall()
+
+            return cambios
+
+    def obtener_historico_cambios(self):
+        self.inicializar()
+
+        with conectar(self.ruta) as conexion:
+
+            cambios = conexion.execute(
+                """
+                SELECT
+                    comparaciones.id AS comparacion_id,
+                    comparaciones.fecha,
+                    comparaciones.identificador,
+                    cambios.id AS cambio_id,
+                    cambios.clave,
+                    cambios.tipo,
+                    cambios.columna,
+                    cambios.valor_1,
+                    cambios.valor_2
+                FROM cambios
+
+                INNER JOIN comparaciones
+                    ON cambios.comparacion_id = comparaciones.id
+
+                ORDER BY
+                    comparaciones.fecha DESC,
+                    cambios.id
+                """
             ).fetchall()
 
             return cambios

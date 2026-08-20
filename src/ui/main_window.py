@@ -45,7 +45,21 @@ class MainWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        self._crear_tabla_filtrable()
+        # =========================================================
+        # TABLAS FILTRABLES
+        # =========================================================
+
+        self._crear_tabla_filtrable(
+            "tableViewCambios"
+        )
+
+        self._crear_tabla_filtrable(
+            "tableViewHistorico"
+        )
+
+        # =========================================================
+        # MODELOS
+        # =========================================================
 
         self.modelo_cambios = ModeloCambios()
 
@@ -57,6 +71,14 @@ class MainWindow(QMainWindow):
 
         self.ui.tableViewHistorico.setModel(
             self.modelo_historico
+        )
+
+        # =========================================================
+        # SELECCIÓN DEL HISTÓRICO
+        # =========================================================
+
+        self.ui.tableViewHistorico.selectionModel().currentRowChanged.connect(
+            self.mostrar_detalle_historico
         )
 
         self.ui.tableViewHistorico.setSortingEnabled(
@@ -173,10 +195,13 @@ class MainWindow(QMainWindow):
             self.eliminar_comparacion_historico
         )
 
-        self.ui.lineEditBuscarHistorico.textChanged.connect(
-            self.filtrar_historico
+        self.ui.lineEditBuscarClaveHistorico.textChanged.connect(
+            lambda _: self.filtrar_historico()
         )
-                
+
+        self.ui.lineEditBuscarIdentificadorHistorico.textChanged.connect(
+            lambda _: self.filtrar_historico()
+        )
     def _filtrar_lista(
         self,
         lista,
@@ -353,26 +378,31 @@ class MainWindow(QMainWindow):
             html_nuevo
         )
 
-    def _crear_tabla_filtrable(self):
+    def _crear_tabla_filtrable(
+        self,
+        nombre_tabla,
+    ):
         """
-        Sustituye el QTableView definido en Qt Designer
-        por QFilterableTableView.
-
-        El widget original se conserva hasta comprobar
-        que el nuevo funciona correctamente.
+        Sustituye un QTableView por QFilterableTableView.
         """
 
-        tabla_original = self.ui.tableViewCambios
+        tabla_original = getattr(
+            self.ui,
+            nombre_tabla,
+        )
 
         tabla_filtrable = QFilterableTableView(
-            tabla_original.parent()
+            tabla_original.parentWidget()
         )
 
         tabla_filtrable.setObjectName(
-            "tableViewCambios"
+            nombre_tabla
         )
 
-        # Mantener algunas propiedades visuales
+        # ---------------------------------------------------------
+        # Copiar propiedades visuales
+        # ---------------------------------------------------------
+
         tabla_filtrable.setMinimumSize(
             tabla_original.minimumSize()
         )
@@ -385,23 +415,38 @@ class MainWindow(QMainWindow):
             tabla_original.alternatingRowColors()
         )
 
-        # Sustituir el widget dentro del layout
+        tabla_filtrable.setSortingEnabled(
+            True
+        )
+
+        # ---------------------------------------------------------
+        # Sustituir dentro del layout
+        # ---------------------------------------------------------
+
         layout = tabla_original.parentWidget().layout()
 
-        if layout is not None:
-            layout.replaceWidget(
-                tabla_original,
-                tabla_filtrable
+        if layout is None:
+            raise RuntimeError(
+                f"No se ha encontrado el layout de {nombre_tabla}"
             )
 
+        layout.replaceWidget(
+            tabla_original,
+            tabla_filtrable,
+        )
+
+        tabla_original.hide()
         tabla_original.deleteLater()
 
-        # Actualizamos la referencia generada por Qt Designer
-        self.ui.tableViewCambios = tabla_filtrable
+        # ---------------------------------------------------------
+        # Actualizar referencia de Ui_MainWindow
+        # ---------------------------------------------------------
 
-    # =========================================================
-    # ARCHIVO 1
-    # =========================================================
+        setattr(
+            self.ui,
+            nombre_tabla,
+            tabla_filtrable,
+        )
 
     def seleccionar_archivo_1(self):
         """
@@ -838,6 +883,68 @@ class MainWindow(QMainWindow):
 
         return -1
 
+    def _mostrar_valores_historico(
+        self,
+        valor_1,
+        valor_2,
+    ):
+        """
+        Muestra los valores del cambio histórico
+        resaltando las diferencias.
+        """
+
+        texto_anterior = (
+            ""
+            if valor_1 is None
+            else str(valor_1)
+        )
+
+        texto_nuevo = (
+            ""
+            if valor_2 is None
+            else str(valor_2)
+        )
+
+        # =========================================================
+        # VALORES IGUALES
+        # =========================================================
+
+        if texto_anterior == texto_nuevo:
+
+            self.ui.textEditValor1Historico.setPlainText(
+                texto_anterior
+            )
+
+            self.ui.textEditValor2Historico.setPlainText(
+                texto_nuevo
+            )
+
+            return
+
+        # =========================================================
+        # RESALTAR DIFERENCIAS
+        # =========================================================
+
+        html_anterior = self._texto_con_diferencias(
+            texto_anterior,
+            texto_nuevo,
+            True,
+        )
+
+        html_nuevo = self._texto_con_diferencias(
+            texto_anterior,
+            texto_nuevo,
+            False,
+        )
+
+        self.ui.textEditValor1Historico.setHtml(
+            html_anterior
+        )
+
+        self.ui.textEditValor2Historico.setHtml(
+            html_nuevo
+        )
+
     def mostrar_detalle_cambio(self, index):
 
         if not index.isValid():
@@ -1025,7 +1132,7 @@ class MainWindow(QMainWindow):
             f"Base de datos:\n{ruta}",
         )
 
-        self.ui.statusbar.showMessage(
+        self.ui.statusBar.showMessage(
             f"Comparación guardada: {identificador}"
         )
 
@@ -1049,16 +1156,18 @@ class MainWindow(QMainWindow):
 
             repositorio = RepositorioSQLite(ruta)
 
-            comparaciones = (
-                repositorio.obtener_comparaciones()
+            cambios = (
+                repositorio.obtener_historico_cambios()
             )
 
             self.ruta_historico = ruta
             self.repositorio_historico = repositorio
 
             self.modelo_historico.actualizar(
-                comparaciones
+                cambios
             )
+
+            self.limpiar_detalle_historico()
 
             self.ui.lineEditBaseHistorico.setText(
                 ruta
@@ -1066,7 +1175,7 @@ class MainWindow(QMainWindow):
 
             self.ui.tableViewHistorico.resizeColumnsToContents()
 
-            self.ui.statusbar.showMessage(
+            self.ui.statusBar.showMessage(
                 "Histórico cargado correctamente."
             )
 
@@ -1078,35 +1187,65 @@ class MainWindow(QMainWindow):
                 f"No se ha podido abrir la base de datos:\n\n{error}",
             )
 
-    def filtrar_historico(self, texto):
+    def filtrar_historico(self):
 
-        texto = texto.strip().lower()
-
-        if not texto:
-
-            self.modelo_historico.actualizar(
-                self.repositorio_historico.obtener_comparaciones()
-            )
-
+        if self.repositorio_historico is None:
             return
 
-        comparaciones = [
-            comparacion
-            for comparacion in self.repositorio_historico.obtener_comparaciones()
-            if texto in str(
-                comparacion["identificador"]
+        texto_clave = (
+            self.ui.lineEditBuscarClaveHistorico
+            .text()
+            .strip()
+            .lower()
+        )
+
+        texto_identificador = (
+            self.ui.lineEditBuscarIdentificadorHistorico
+            .text()
+            .strip()
+            .lower()
+        )
+
+        cambios = (
+            self.repositorio_historico
+            .obtener_historico_cambios()
+        )
+
+        cambios_filtrados = []
+
+        for cambio in cambios:
+
+            clave = str(
+                cambio["clave"]
             ).lower()
-            or texto in str(
-                comparacion["archivo_anterior"]
+
+            identificador = str(
+                cambio["identificador"]
             ).lower()
-            or texto in str(
-                comparacion["archivo_nuevo"]
-            ).lower()
-        ]
+
+            coincide_clave = (
+                not texto_clave
+                or texto_clave in clave
+            )
+
+            coincide_identificador = (
+                not texto_identificador
+                or texto_identificador in identificador
+            )
+
+            if (
+                coincide_clave
+                and coincide_identificador
+            ):
+                cambios_filtrados.append(
+                    cambio
+                )
 
         self.modelo_historico.actualizar(
-            comparaciones
+            cambios_filtrados
         )
+
+        self.limpiar_detalle_historico()
 
     def eliminar_comparacion_historico(self):
 
@@ -1116,25 +1255,50 @@ class MainWindow(QMainWindow):
         )
 
         if not index.isValid():
+
             QMessageBox.warning(
                 self,
                 "Sin selección",
                 "Selecciona una comparación.",
             )
+
             return
 
-        comparacion = (
-            self.modelo_historico.obtener_comparacion(
-                index.row()
-            )
+        cambio = (
+            self.modelo_historico
+            .obtener_cambio(index.row())
         )
+
+        if cambio is None:
+            return
+
+        comparacion_id = cambio.get(
+            "comparacion_id"
+        )
+
+        identificador = cambio.get(
+            "identificador",
+            "",
+        )
+
+        if comparacion_id is None:
+
+            QMessageBox.critical(
+                self,
+                "Error",
+                "No se ha podido identificar la comparación.",
+            )
+
+            return
 
         respuesta = QMessageBox.question(
             self,
             "Eliminar comparación",
             (
-                "¿Deseas eliminar la comparación?\n\n"
-                f"{comparacion['identificador']}"
+                "¿Deseas eliminar la comparación completa?\n\n"
+                f"Identificador: {identificador}\n\n"
+                "Se eliminarán todos los cambios asociados "
+                "a esta comparación."
             ),
             QMessageBox.StandardButton.Yes
             | QMessageBox.StandardButton.No,
@@ -1147,20 +1311,22 @@ class MainWindow(QMainWindow):
         try:
 
             self.repositorio_historico.eliminar_comparacion(
-                comparacion["id"]
+                comparacion_id
             )
 
-            comparaciones = (
+            cambios = (
                 self.repositorio_historico
-                .obtener_comparaciones()
+                .obtener_historico_cambios()
             )
 
             self.modelo_historico.actualizar(
-                comparaciones
+                cambios
             )
 
-            self.ui.statusbar.showMessage(
-                "Comparación eliminada."
+            self.limpiar_detalle_historico()
+
+            self.ui.statusBar.showMessage(
+                f"Comparación '{identificador}' eliminada."
             )
 
         except Exception as error:
@@ -1168,7 +1334,68 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(
                 self,
                 "Error",
-                f"No se ha podido eliminar:\n\n{error}",
+                (
+                    "No se ha podido eliminar la comparación:\n\n"
+                    f"{error}"
+                ),
             )
+    def mostrar_detalle_historico(
+        self,
+        indice_actual,
+        indice_anterior,
+    ):
+        """
+        Muestra el detalle del cambio seleccionado
+        en el histórico.
+        """
 
-        
+        if not indice_actual.isValid():
+
+            self.limpiar_detalle_historico()
+
+            return
+
+        cambio = self.modelo_historico.obtener_cambio(
+            indice_actual.row()
+        )
+
+        if cambio is None:
+
+            self.limpiar_detalle_historico()
+
+            return
+
+        # =========================================================
+        # FECHA
+        # =========================================================
+
+        fecha = cambio["fecha"]
+
+        if fecha is None:
+            fecha = ""
+
+        self.ui.labelResumenHistorico.setText(
+            f"Fecha: {fecha}"
+        )
+
+        # =========================================================
+        # VALORES
+        # =========================================================
+
+        valor_1 = cambio["valor_1"]
+        valor_2 = cambio["valor_2"]
+
+        self._mostrar_valores_historico(
+            valor_1,
+            valor_2,
+        )
+
+    def limpiar_detalle_historico(self):
+
+        self.ui.labelResumenHistorico.setText(
+            "Selecciona un cambio"
+        )
+
+        self.ui.textEditValor1Historico.clear()
+        self.ui.textEditValor2Historico.clear()
+
