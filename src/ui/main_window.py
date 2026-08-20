@@ -31,6 +31,11 @@ from src.excel.lector import (
     leer_excel,
 )
 
+from src.excel.nombres import (
+    obtener_nombre_bd,
+    obtener_identificador_propuesto,
+)
+
 from src.excel.analizador import (
     obtener_columnas_comunes,
     obtener_columnas_nuevas,
@@ -1012,10 +1017,15 @@ class MainWindow(QMainWindow):
 
         if respuesta == QMessageBox.StandardButton.Yes:
 
+            nombre_bd = obtener_nombre_bd(
+                self.ui.lineEditArchivo1.text(),
+                self.ui.lineEditArchivo2.text(),
+            )
+
             ruta, _ = QFileDialog.getSaveFileName(
                 self,
                 "Crear base de datos SQLite",
-                "",
+                nombre_bd,
                 "Base de datos SQLite (*.sqlite *.db)",
             )
 
@@ -1042,10 +1052,18 @@ class MainWindow(QMainWindow):
         # PEDIR IDENTIFICADOR
         # =========================================================
 
+        identificador_propuesto = (
+            obtener_identificador_propuesto(
+                archivo_anterior,
+                archivo_nuevo,
+            )
+        )
+
         identificador, aceptado = QInputDialog.getText(
             self,
             "Identificador de comparación",
             "Introduce el identificador de esta comparación:",
+            text=identificador_propuesto,
         )
 
         if not aceptado:
@@ -1077,8 +1095,8 @@ class MainWindow(QMainWindow):
             for item in self.ui.listaColumnasComparar.selectedItems()
         ]
 
-        archivo_anterior = self.ui.lineEditArchivo1.text()
-        archivo_nuevo = self.ui.lineEditArchivo2.text()
+        # archivo_anterior = self.ui.lineEditArchivo1.text()
+        # archivo_nuevo = self.ui.lineEditArchivo2.text()
 
         hoja_anterior = self.ui.comboBoxHoja1.currentText()
         hoja_nueva = self.ui.comboBoxHoja2.currentText()
