@@ -19,10 +19,12 @@ from src.ui.ui_main_window import Ui_MainWindow
 
 from src.ui.modelo_historico import ModeloHistorico
 
-# from src.ui.filtro_tabla import (
-#     ModeloFiltradoCambios,
-#     CabeceraFiltrable,
-# )
+from src.database.repositorio_configuracion import (
+    RepositorioConfiguracion,
+    obtener_ruta_configuracion,
+)
+
+from src.excel.firma import generar_firma_excel
 
 from src.excel.lector import (
     obtener_hojas,
@@ -91,6 +93,18 @@ class MainWindow(QMainWindow):
         self.df_1 = None
         self.df_2 = None
 
+        # =========================================================
+        # CONFIGURACIÓN EN CACHÉ
+        # =========================================================
+
+        self.repositorio_configuracion = (
+            RepositorioConfiguracion(
+                obtener_ruta_configuracion()
+            )
+        )
+
+        self.firma_configuracion_actual = None
+    
         self._conectar_eventos()
 
         self._inicializar_interfaz()
@@ -623,7 +637,14 @@ class MainWindow(QMainWindow):
             self.ui.listaColumnasClave.clear()
             self.ui.listaColumnasComparar.clear()
             return
-
+        
+        self.firma_configuracion_actual = (
+            generar_firma_excel(
+                self.df_1,
+                self.df_2,
+            )
+        )
+            
         columnas_comunes = obtener_columnas_comunes(
             self.df_1,
             self.df_2,
@@ -655,6 +676,8 @@ class MainWindow(QMainWindow):
             columnas_2,
             columnas_eliminadas,
         )
+
+        self._cargar_configuracion_cacheada()
 
     # =========================================================
     # INFORMACIÓN DE COLUMNAS
@@ -695,6 +718,68 @@ class MainWindow(QMainWindow):
 
             self.ui.statusBar.showMessage(
                 "Las estructuras de ambos Excel coinciden."
+            )
+
+    def _cargar_configuracion_cacheada(self):
+        """
+        Busca una configuración guardada para la estructura
+        actual de los dos Excel y la aplica si existe.
+        """
+
+        if not self.firma_configuracion_actual:
+            return False
+
+        configuracion = (
+            self.repositorio_configuracion
+            .obtener_configuracion(
+                self.firma_configuracion_actual
+            )
+        )
+
+        if configuracion is None:
+            return False
+
+        # ---------------------------------------------------------
+        # Seleccionar columnas clave
+        # ---------------------------------------------------------
+
+        self._seleccionar_items_lista(
+            self.ui.listaColumnasClave,
+            configuracion["columnas_clave"],
+        )
+
+        # ---------------------------------------------------------
+        # Seleccionar columnas a comparar
+        # ---------------------------------------------------------
+
+        self._seleccionar_items_lista(
+            self.ui.listaColumnasComparar,
+            configuracion["columnas_comparadas"],
+        )
+
+        self.ui.statusBar.showMessage(
+            "Configuración anterior recuperada automáticamente."
+        )
+
+        return True
+
+    def _seleccionar_items_lista(
+        self,
+        lista,
+        valores: list[str],
+    ):
+        """
+        Selecciona en una QListWidget los elementos indicados.
+        """
+
+        valores = set(valores)
+
+        for i in range(lista.count()):
+
+            item = lista.item(i)
+
+            item.setSelected(
+                item.text() in valores
             )
 
     # =========================================================
@@ -743,6 +828,14 @@ class MainWindow(QMainWindow):
             item.text()
             for item in self.ui.listaColumnasComparar.selectedItems()
         ]
+
+        self.repositorio_configuracion.guardar_configuracion(
+            firma=self.firma_configuracion_actual,
+            hoja_anterior=self.ui.comboBoxHoja1.currentText(),
+            hoja_nueva=self.ui.comboBoxHoja2.currentText(),
+            columnas_clave=columnas_clave,
+            columnas_comparadas=columnas_comparar,
+        )
 
         # ---------------------------------------------------------
         # Validar clave
