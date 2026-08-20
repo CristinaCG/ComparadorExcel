@@ -73,45 +73,6 @@ class MainWindow(QMainWindow):
             self.modelo_historico
         )
 
-        # =========================================================
-        # SELECCIÓN DEL HISTÓRICO
-        # =========================================================
-
-        self.ui.tableViewHistorico.selectionModel().currentRowChanged.connect(
-            self.mostrar_detalle_historico
-        )
-
-        self.ui.tableViewHistorico.setSortingEnabled(
-            True
-        )
-
-        self.ruta_historico = None
-        self.repositorio_historico = None
-
-        # self.modelo_cambios = ModeloCambios()
-
-        # self.modelo_filtrado = ModeloFiltradoCambios()
-
-        # self.modelo_filtrado.setSourceModel(
-        #     self.modelo_cambios
-        # )
-
-        # self.ui.tableViewCambios.setModel(
-        #     self.modelo_filtrado
-        # )
-
-        # self.ui.tableViewCambios.setSortingEnabled(True)
-
-        # Cabecera con filtros
-        # cabecera = CabeceraFiltrable(
-        #     Qt.Orientation.Horizontal,
-        #     self.ui.tableViewCambios,
-        # )
-
-        # self.ui.tableViewCambios.setHorizontalHeader(
-        #     cabecera
-        # )
-
         self.ui.lineEditBuscarClave.textChanged.connect(
             lambda texto: self._filtrar_lista(
                 self.ui.listaColumnasClave,
@@ -183,6 +144,10 @@ class MainWindow(QMainWindow):
             self.mostrar_detalle_cambio
         )
 
+        self.ui.tableViewHistorico.clicked.connect(
+            self.mostrar_detalle_historico
+        )
+
         self.ui.pushButtonGuardarComparacion.clicked.connect(
             self.guardar_comparacion
         )
@@ -199,9 +164,11 @@ class MainWindow(QMainWindow):
             lambda _: self.filtrar_historico()
         )
 
-        self.ui.lineEditBuscarIdentificadorHistorico.textChanged.connect(
+        self.ui.comboBoxIdentificadorHistorico.currentTextChanged.connect(
             lambda _: self.filtrar_historico()
         )
+
+
     def _filtrar_lista(
         self,
         lista,
@@ -327,6 +294,8 @@ class MainWindow(QMainWindow):
         self,
         valor_1,
         valor_2,
+        edit1,
+        edit2
     ):
         """
         Muestra los valores anterior y nuevo resaltando
@@ -347,14 +316,8 @@ class MainWindow(QMainWindow):
 
         # Si ambos valores son iguales, no hay nada que resaltar.
         if texto_anterior == texto_nuevo:
-
-            self.ui.textEditValor1.setPlainText(
-                texto_anterior
-            )
-
-            self.ui.textEditValor2.setPlainText(
-                texto_nuevo
-            )
+            edit1.setPlainText(texto_anterior)
+            edit2.setPlainText(texto_nuevo)
 
             return
 
@@ -367,16 +330,11 @@ class MainWindow(QMainWindow):
         html_nuevo = self._texto_con_diferencias(
             texto_anterior,
             texto_nuevo,
-            False,
+            True,
         )
 
-        self.ui.textEditValor1.setHtml(
-            html_anterior
-        )
-
-        self.ui.textEditValor2.setHtml(
-            html_nuevo
-        )
+        edit1.setHtml(html_anterior)
+        edit2.setHtml(html_nuevo)
 
     def _crear_tabla_filtrable(
         self,
@@ -874,6 +832,9 @@ class MainWindow(QMainWindow):
             if modelo is self.modelo_cambios:
                 return indice.row()
 
+            if modelo is self.modelo_historico:
+                return indice.row()
+
             if hasattr(modelo, "mapToSource"):
 
                 indice = modelo.mapToSource(indice)
@@ -883,70 +844,8 @@ class MainWindow(QMainWindow):
 
         return -1
 
-    def _mostrar_valores_historico(
-        self,
-        valor_1,
-        valor_2,
-    ):
-        """
-        Muestra los valores del cambio histórico
-        resaltando las diferencias.
-        """
-
-        texto_anterior = (
-            ""
-            if valor_1 is None
-            else str(valor_1)
-        )
-
-        texto_nuevo = (
-            ""
-            if valor_2 is None
-            else str(valor_2)
-        )
-
-        # =========================================================
-        # VALORES IGUALES
-        # =========================================================
-
-        if texto_anterior == texto_nuevo:
-
-            self.ui.textEditValor1Historico.setPlainText(
-                texto_anterior
-            )
-
-            self.ui.textEditValor2Historico.setPlainText(
-                texto_nuevo
-            )
-
-            return
-
-        # =========================================================
-        # RESALTAR DIFERENCIAS
-        # =========================================================
-
-        html_anterior = self._texto_con_diferencias(
-            texto_anterior,
-            texto_nuevo,
-            True,
-        )
-
-        html_nuevo = self._texto_con_diferencias(
-            texto_anterior,
-            texto_nuevo,
-            False,
-        )
-
-        self.ui.textEditValor1Historico.setHtml(
-            html_anterior
-        )
-
-        self.ui.textEditValor2Historico.setHtml(
-            html_nuevo
-        )
-
     def mostrar_detalle_cambio(self, index):
-
+        
         if not index.isValid():
             return
 
@@ -963,6 +862,8 @@ class MainWindow(QMainWindow):
         self._mostrar_valores_con_diferencias(
             cambio.valor_1,
             cambio.valor_2,
+            self.ui.textEditValor1,
+            self.ui.textEditValor2
         )
 
     def guardar_comparacion(self):
@@ -1136,6 +1037,26 @@ class MainWindow(QMainWindow):
             f"Comparación guardada: {identificador}"
         )
 
+    def _actualizar_identificadores_historico(self, cambios):
+        combo = self.ui.comboBoxIdentificadorHistorico
+
+        combo.blockSignals(True)
+
+        combo.clear()
+        combo.addItem("Todos")
+
+        identificadores = sorted(
+            {
+                str(cambio["identificador"])
+                for cambio in cambios
+                if cambio["identificador"] is not None
+            }
+        )
+
+        combo.addItems(identificadores)
+
+        combo.blockSignals(False)
+        
     def abrir_historico(self):
 
         ruta, _ = QFileDialog.getOpenFileName(
@@ -1163,6 +1084,10 @@ class MainWindow(QMainWindow):
             self.ruta_historico = ruta
             self.repositorio_historico = repositorio
 
+            self._actualizar_identificadores_historico(
+                cambios
+            )
+                        
             self.modelo_historico.actualizar(
                 cambios
             )
@@ -1199,11 +1124,10 @@ class MainWindow(QMainWindow):
             .lower()
         )
 
-        texto_identificador = (
-            self.ui.lineEditBuscarIdentificadorHistorico
-            .text()
+        identificador_seleccionado = (
+            self.ui.comboBoxIdentificadorHistorico
+            .currentText()
             .strip()
-            .lower()
         )
 
         cambios = (
@@ -1221,25 +1145,26 @@ class MainWindow(QMainWindow):
 
             identificador = str(
                 cambio["identificador"]
-            ).lower()
+            )
 
             coincide_clave = (
                 not texto_clave
                 or texto_clave in clave
             )
 
-            coincide_identificador = (
-                not texto_identificador
-                or texto_identificador in identificador
-            )
+            if identificador_seleccionado == "Todos":
+                coincide_identificador = True
+            else:
+                coincide_identificador = (
+                    identificador
+                    == identificador_seleccionado
+                )
 
             if (
                 coincide_clave
                 and coincide_identificador
             ):
-                cambios_filtrados.append(
-                    cambio
-                )
+                cambios_filtrados.append(cambio)
 
         self.modelo_historico.actualizar(
             cambios_filtrados
@@ -1272,15 +1197,9 @@ class MainWindow(QMainWindow):
         if cambio is None:
             return
 
-        comparacion_id = cambio.get(
-            "comparacion_id"
-        )
+        comparacion_id = cambio["comparacion_id"]
 
-        identificador = cambio.get(
-            "identificador",
-            "",
-        )
-
+        identificador = cambio["identificador"]
         if comparacion_id is None:
 
             QMessageBox.critical(
@@ -1339,55 +1258,30 @@ class MainWindow(QMainWindow):
                     f"{error}"
                 ),
             )
-    def mostrar_detalle_historico(
-        self,
-        indice_actual,
-        indice_anterior,
-    ):
-        """
-        Muestra el detalle del cambio seleccionado
-        en el histórico.
-        """
 
-        if not indice_actual.isValid():
-
-            self.limpiar_detalle_historico()
-
+    def mostrar_detalle_historico(self, index):
+        if not index.isValid():
             return
 
-        cambio = self.modelo_historico.obtener_cambio(
-            indice_actual.row()
-        )
+        fila = self._obtener_fila_modelo_origen(index)
+
+        if fila < 0:
+            return
+
+        cambio = self.modelo_historico.obtener_cambio(fila)
 
         if cambio is None:
-
-            self.limpiar_detalle_historico()
-
             return
 
-        # =========================================================
-        # FECHA
-        # =========================================================
-
-        fecha = cambio["fecha"]
-
-        if fecha is None:
-            fecha = ""
-
-        self.ui.labelResumenHistorico.setText(
-            f"Fecha: {fecha}"
+        self._mostrar_valores_con_diferencias(
+            cambio["valor_1"],
+            cambio["valor_2"],
+            self.ui.textEditValor1Historico,
+            self.ui.textEditValor2Historico
         )
 
-        # =========================================================
-        # VALORES
-        # =========================================================
-
-        valor_1 = cambio["valor_1"]
-        valor_2 = cambio["valor_2"]
-
-        self._mostrar_valores_historico(
-            valor_1,
-            valor_2,
+        self.ui.labelResumenHistorico.setText(
+            cambio["fecha"]
         )
 
     def limpiar_detalle_historico(self):

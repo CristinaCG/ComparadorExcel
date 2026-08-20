@@ -172,3 +172,74 @@ python -m pip freeze
 ```
 
 > **Nota:** `qextrawidgets` contiene widgets adicionales utilizados por la aplicación, entre ellos `QFilterableTableView`.
+
+### Exportar la aplicación a `.exe`
+
+Para generar el ejecutable de Windows se utiliza **PyInstaller** dentro del entorno virtual `.venv`.
+
+Primero, activar el entorno virtual:
+
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+Instalar PyInstaller si todavía no está instalado:
+
+```powershell
+python -m pip install pyinstaller
+```
+
+Desde la raíz del proyecto, generar el ejecutable:
+
+```powershell
+.venv\Scripts\pyinstaller.exe --name ComparadorExcel --windowed --onefile src\main.py
+```
+
+También se puede ejecutar mediante el módulo de Python:
+
+```powershell
+python -m PyInstaller --name ComparadorExcel --windowed --onefile src\main.py
+```
+
+Una vez finalizado el proceso, PyInstaller creará la carpeta:
+
+```text
+dist/
+└── ComparadorExcel.exe
+```
+
+El archivo:
+
+```text
+dist\ComparadorExcel.exe
+```
+
+es la aplicación ejecutable y puede copiarse a otro equipo Windows.
+
+Las carpetas y archivos `build/` y `ComparadorExcel.spec` son generados por PyInstaller durante el proceso.
+
+> **Importante:** el `.exe` debe generarse en Windows. PyInstaller no permite generar directamente un ejecutable `.exe` de Windows desde macOS.
+
+---
+
+### Generar una nueva versión
+
+El flujo recomendado antes de crear una nueva versión es:
+
+1. Activar el entorno virtual.
+2. Ejecutar los tests.
+3. Probar la aplicación.
+4. Generar el `.exe` con PyInstaller.
+
+```powershell
+.venv\Scripts\Activate.ps1
+python -m pytest -v
+python -m src.main
+python -m PyInstaller --name ComparadorExcel --windowed --onefile src\main.py
+```
+
+El resultado estará en:
+
+```text
+dist\ComparadorExcel.exe
+```

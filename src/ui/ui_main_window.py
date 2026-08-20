@@ -138,7 +138,7 @@ class Ui_MainWindow(object):
 
         self.listaColumnasClave = QListWidget(self.groupBoxClave)
         self.listaColumnasClave.setObjectName(u"listaColumnasClave")
-        self.listaColumnasClave.setSelectionMode(QAbstractItemView.MultiSelection)
+        self.listaColumnasClave.setSelectionMode(QAbstractItemView.SelectionMode.MultiSelection)
 
         self.verticalLayout_5.addWidget(self.listaColumnasClave)
 
@@ -161,7 +161,7 @@ class Ui_MainWindow(object):
 
         self.listaColumnasComparar = QListWidget(self.groupBoxColumnasComparar)
         self.listaColumnasComparar.setObjectName(u"listaColumnasComparar")
-        self.listaColumnasComparar.setSelectionMode(QAbstractItemView.MultiSelection)
+        self.listaColumnasComparar.setSelectionMode(QAbstractItemView.SelectionMode.MultiSelection)
 
         self.verticalLayout_6.addWidget(self.listaColumnasComparar)
 
@@ -203,7 +203,7 @@ class Ui_MainWindow(object):
 
         self.labelResumen = QLabel(self.tab_resultados)
         self.labelResumen.setObjectName(u"labelResumen")
-        self.labelResumen.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
+        self.labelResumen.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
 
         self.horizontalLayout_3.addWidget(self.labelResumen)
 
@@ -303,35 +303,40 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_8.addLayout(self.horizontalLayout_11)
 
-        self.horizontalLayout_12 = QHBoxLayout()
-        self.horizontalLayout_12.setObjectName(u"horizontalLayout_12")
+        self.horizontalLayoutIdentificador = QHBoxLayout()
+        self.horizontalLayoutIdentificador.setObjectName(u"horizontalLayoutIdentificador")
         self.labelBuscarClaveHistorico = QLabel(self.tab_historico)
         self.labelBuscarClaveHistorico.setObjectName(u"labelBuscarClaveHistorico")
 
-        self.horizontalLayout_12.addWidget(self.labelBuscarClaveHistorico)
+        self.horizontalLayoutIdentificador.addWidget(self.labelBuscarClaveHistorico)
 
         self.lineEditBuscarClaveHistorico = QLineEdit(self.tab_historico)
         self.lineEditBuscarClaveHistorico.setObjectName(u"lineEditBuscarClaveHistorico")
 
-        self.horizontalLayout_12.addWidget(self.lineEditBuscarClaveHistorico)
+        self.horizontalLayoutIdentificador.addWidget(self.lineEditBuscarClaveHistorico)
 
         self.labelBuscarIdentificadorHistorico = QLabel(self.tab_historico)
         self.labelBuscarIdentificadorHistorico.setObjectName(u"labelBuscarIdentificadorHistorico")
 
-        self.horizontalLayout_12.addWidget(self.labelBuscarIdentificadorHistorico)
+        self.horizontalLayoutIdentificador.addWidget(self.labelBuscarIdentificadorHistorico)
 
-        self.lineEditBuscarIdentificadorHistorico = QLineEdit(self.tab_historico)
-        self.lineEditBuscarIdentificadorHistorico.setObjectName(u"lineEditBuscarIdentificadorHistorico")
+        self.comboBoxIdentificadorHistorico = QComboBox(self.tab_historico)
+        self.comboBoxIdentificadorHistorico.setObjectName(u"comboBoxIdentificadorHistorico")
 
-        self.horizontalLayout_12.addWidget(self.lineEditBuscarIdentificadorHistorico)
+        self.horizontalLayoutIdentificador.addWidget(self.comboBoxIdentificadorHistorico)
 
         self.pushButtonEliminarComparacion = QPushButton(self.tab_historico)
         self.pushButtonEliminarComparacion.setObjectName(u"pushButtonEliminarComparacion")
 
-        self.horizontalLayout_12.addWidget(self.pushButtonEliminarComparacion)
+        self.horizontalLayoutIdentificador.addWidget(self.pushButtonEliminarComparacion)
 
+        self.horizontalLayoutIdentificador.setStretch(0, 1)
+        self.horizontalLayoutIdentificador.setStretch(1, 2)
+        self.horizontalLayoutIdentificador.setStretch(2, 1)
+        self.horizontalLayoutIdentificador.setStretch(3, 2)
+        self.horizontalLayoutIdentificador.setStretch(4, 2)
 
-        self.verticalLayout_8.addLayout(self.horizontalLayout_12)
+        self.verticalLayout_8.addLayout(self.horizontalLayoutIdentificador)
 
         self.tableViewHistorico = QTableView(self.tab_historico)
         self.tableViewHistorico.setObjectName(u"tableViewHistorico")
@@ -349,12 +354,12 @@ class Ui_MainWindow(object):
         self.verticalLayout_11.setObjectName(u"verticalLayout_11")
         self.labelResumenHistorico = QLabel(self.groupBoxDetalleHistorico)
         self.labelResumenHistorico.setObjectName(u"labelResumenHistorico")
-        self.labelResumenHistorico.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
+        self.labelResumenHistorico.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
 
         self.verticalLayout_11.addWidget(self.labelResumenHistorico)
 
-        self.horizontalLayout_13 = QHBoxLayout()
-        self.horizontalLayout_13.setObjectName(u"horizontalLayout_13")
+        self.horizontalLayout_DetalleHistorico = QHBoxLayout()
+        self.horizontalLayout_DetalleHistorico.setObjectName(u"horizontalLayout_DetalleHistorico")
         self.verticalLayout_Valor1Historico = QVBoxLayout()
         self.verticalLayout_Valor1Historico.setObjectName(u"verticalLayout_Valor1Historico")
         self.labelValor1Historico = QLabel(self.groupBoxDetalleHistorico)
@@ -370,27 +375,29 @@ class Ui_MainWindow(object):
         self.verticalLayout_Valor1Historico.addWidget(self.textEditValor1Historico)
 
 
-        self.horizontalLayout_13.addLayout(self.verticalLayout_Valor1Historico)
+        self.horizontalLayout_DetalleHistorico.addLayout(self.verticalLayout_Valor1Historico)
 
-        self.verticalLayout_10 = QVBoxLayout()
-        self.verticalLayout_10.setObjectName(u"verticalLayout_10")
+        self.verticalLayout_Valor2Historico = QVBoxLayout()
+        self.verticalLayout_Valor2Historico.setObjectName(u"verticalLayout_Valor2Historico")
         self.labelValor2Historico = QLabel(self.groupBoxDetalleHistorico)
         self.labelValor2Historico.setObjectName(u"labelValor2Historico")
 
-        self.verticalLayout_10.addWidget(self.labelValor2Historico)
+        self.verticalLayout_Valor2Historico.addWidget(self.labelValor2Historico)
 
         self.textEditValor2Historico = QTextEdit(self.groupBoxDetalleHistorico)
         self.textEditValor2Historico.setObjectName(u"textEditValor2Historico")
         self.textEditValor2Historico.setMinimumSize(QSize(0, 100))
         self.textEditValor2Historico.setReadOnly(True)
 
-        self.verticalLayout_10.addWidget(self.textEditValor2Historico)
+        self.verticalLayout_Valor2Historico.addWidget(self.textEditValor2Historico)
 
 
-        self.horizontalLayout_13.addLayout(self.verticalLayout_10)
+        self.horizontalLayout_DetalleHistorico.addLayout(self.verticalLayout_Valor2Historico)
 
+        self.horizontalLayout_DetalleHistorico.setStretch(0, 1)
+        self.horizontalLayout_DetalleHistorico.setStretch(1, 1)
 
-        self.verticalLayout_11.addLayout(self.horizontalLayout_13)
+        self.verticalLayout_11.addLayout(self.horizontalLayout_DetalleHistorico)
 
 
         self.horizontalLayout_14.addLayout(self.verticalLayout_11)
@@ -440,7 +447,7 @@ class Ui_MainWindow(object):
         self.labelBaseHistorico.setText(QCoreApplication.translate("MainWindow", u"Base de datos:", None))
         self.pushButtonAbrirHistorico.setText(QCoreApplication.translate("MainWindow", u"Abrir", None))
         self.labelBuscarClaveHistorico.setText(QCoreApplication.translate("MainWindow", u"Buscar clave:", None))
-        self.labelBuscarIdentificadorHistorico.setText(QCoreApplication.translate("MainWindow", u"Buscar identificador:", None))
+        self.labelBuscarIdentificadorHistorico.setText(QCoreApplication.translate("MainWindow", u"Identificador:", None))
         self.pushButtonEliminarComparacion.setText(QCoreApplication.translate("MainWindow", u"Eliminar comparaci\u00f3n", None))
         self.groupBoxDetalleHistorico.setTitle(QCoreApplication.translate("MainWindow", u"Detalle del cambio", None))
         self.labelResumenHistorico.setText("")

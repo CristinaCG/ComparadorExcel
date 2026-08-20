@@ -150,7 +150,7 @@
                 <item>
                  <widget class="QListWidget" name="listaColumnasClave">
                   <property name="selectionMode">
-                   <enum>QAbstractItemView::MultiSelection</enum>
+                   <enum>QAbstractItemView::SelectionMode::MultiSelection</enum>
                   </property>
                  </widget>
                 </item>
@@ -177,7 +177,7 @@
                 <item>
                  <widget class="QListWidget" name="listaColumnasComparar">
                   <property name="selectionMode">
-                   <enum>QAbstractItemView::MultiSelection</enum>
+                   <enum>QAbstractItemView::SelectionMode::MultiSelection</enum>
                   </property>
                  </widget>
                 </item>
@@ -234,7 +234,7 @@
                  <string>0 cambios encontrados</string>
                 </property>
                 <property name="alignment">
-                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                 <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                 </property>
                </widget>
               </item>
@@ -364,7 +364,7 @@
          </layout>
         </item>
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_12">
+         <layout class="QHBoxLayout" name="horizontalLayoutIdentificador" stretch="1,2,1,2,2">
           <item>
            <widget class="QLabel" name="labelBuscarClaveHistorico">
             <property name="text">
@@ -378,12 +378,12 @@
           <item>
            <widget class="QLabel" name="labelBuscarIdentificadorHistorico">
             <property name="text">
-             <string>Buscar identificador:</string>
+             <string>Identificador:</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="lineEditBuscarIdentificadorHistorico"/>
+           <widget class="QComboBox" name="comboBoxIdentificadorHistorico"/>
           </item>
           <item>
            <widget class="QPushButton" name="pushButtonEliminarComparacion">
@@ -423,12 +423,12 @@
                 <string/>
                </property>
                <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                </property>
               </widget>
              </item>
              <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_13">
+              <layout class="QHBoxLayout" name="horizontalLayout_DetalleHistorico" stretch="1,1">
                <item>
                 <layout class="QVBoxLayout" name="verticalLayout_Valor1Historico">
                  <item>
@@ -454,7 +454,7 @@
                 </layout>
                </item>
                <item>
-                <layout class="QVBoxLayout" name="verticalLayout_10">
+                <layout class="QVBoxLayout" name="verticalLayout_Valor2Historico">
                  <item>
                   <widget class="QLabel" name="labelValor2Historico">
                    <property name="text">
