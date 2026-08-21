@@ -5,7 +5,7 @@ a = Analysis(
     ['src/main.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[('images/pine logo.png', 'images'), ('.venv/Lib/site-packages/emoji_data_python/data', 'emoji_data_python/data')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -35,10 +35,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-)
-app = BUNDLE(
-    exe,
-    name='ComparadorExcel.app',
-    icon=None,
-    bundle_identifier=None,
+    icon=['images/pine_logo.ico'],
 )

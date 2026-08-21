@@ -235,7 +235,7 @@ El flujo recomendado antes de crear una nueva versión es:
 .venv\Scripts\Activate.ps1
 python -m pytest -v
 python -m src.main
-python -m PyInstaller --name ComparadorExcel --windowed --onefile src\main.py
+python -m PyInstaller --onefile --windowed --name "ComparadorExcel" --icon="images/pine_logo.ico" --add-data "images/pine logo.png;images" --add-data ".venv\Lib\site-packages\emoji_data_python\data;emoji_data_python\data" src/main.py
 ```
 
 El resultado estará en:
