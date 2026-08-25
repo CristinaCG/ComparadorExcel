@@ -62,45 +62,45 @@ def test_guardar_y_recuperar_comparacion(tmp_path: Path):
     assert cambios_guardados[0]["valor_2"] == "12"
 
 
-# def test_listar_comparaciones(tmp_path: Path):
+def test_obtener_comparaciones(tmp_path: Path):
 
-#     ruta = tmp_path / "comparaciones.sqlite"
+    ruta = tmp_path / "comparaciones.sqlite"
 
-#     repositorio = RepositorioSQLite(ruta)
+    repositorio = RepositorioSQLite(ruta)
 
-#     repositorio.guardar_comparacion(
-#         identificador="20260724/20260813",
-#         archivo_anterior="a.xlsx",
-#         archivo_nuevo="b.xlsx",
-#         hoja_anterior="Hoja1",
-#         hoja_nueva="Hoja1",
-#         columnas_clave=["Codigo"],
-#         columnas_comparadas=["Peso"],
-#         cambios=[],
-#     )
+    repositorio.guardar_comparacion(
+        identificador="20260724/20260813",
+        archivo_anterior="a.xlsx",
+        archivo_nuevo="b.xlsx",
+        hoja_anterior="Hoja1",
+        hoja_nueva="Hoja1",
+        columnas_clave=["Codigo"],
+        columnas_comparadas=["Peso"],
+        cambios=[],
+    )
 
-#     repositorio.guardar_comparacion(
-#         identificador="20260813/20260819",
-#         archivo_anterior="b.xlsx",
-#         archivo_nuevo="c.xlsx",
-#         hoja_anterior="Hoja1",
-#         hoja_nueva="Hoja1",
-#         columnas_clave=["Codigo"],
-#         columnas_comparadas=["Peso"],
-#         cambios=[],
-#     )
+    repositorio.guardar_comparacion(
+        identificador="20260813/20260819",
+        archivo_anterior="b.xlsx",
+        archivo_nuevo="c.xlsx",
+        hoja_anterior="Hoja1",
+        hoja_nueva="Hoja1",
+        columnas_clave=["Codigo"],
+        columnas_comparadas=["Peso"],
+        cambios=[],
+    )
 
-#     comparaciones = repositorio.listar_comparaciones()
+    comparaciones = repositorio.obtener_comparaciones()
 
-#     assert len(comparaciones) == 2
+    assert len(comparaciones) == 2
 
-#     identificadores = [
-#         comparacion["identificador"]
-#         for comparacion in comparaciones
-#     ]
+    identificadores = [
+        comparacion["identificador"]
+        for comparacion in comparaciones
+    ]
 
-#     assert "20260724/20260813" in identificadores
-#     assert "20260813/20260819" in identificadores
+    assert "20260724/20260813" in identificadores
+    assert "20260813/20260819" in identificadores
 
 
 def test_eliminar_comparacion(tmp_path: Path):
