@@ -1,8 +1,13 @@
 from pathlib import Path
+from openpyxl import Workbook
+from openpyxl.styles import Font
 
 from difflib import SequenceMatcher
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import (
+    Qt,
+    QSortFilterProxyModel,
+)
 
 from PySide6.QtWidgets import (
     QMainWindow,
@@ -187,6 +192,9 @@ class MainWindow(QMainWindow):
             lambda _: self.filtrar_historico()
         )
 
+        self.ui.pushButtonExportarHistorico.clicked.connect(
+            self.exportar_historico_excel
+        )
 
     def _filtrar_lista(
         self,
@@ -970,7 +978,7 @@ class MainWindow(QMainWindow):
 
         El usuario puede:
         - Crear una nueva base de datos.
-        - Añadir la comparación a una base existente.
+        - Añadir la comparación a una base de datos existente.
         """
 
         # =========================================================
@@ -988,25 +996,39 @@ class MainWindow(QMainWindow):
             return
 
         # =========================================================
+        # OBTENER ARCHIVOS ACTUALES
+        # =========================================================
+
+        archivo_anterior = self.ui.lineEditArchivo1.text().strip()
+        archivo_nuevo = self.ui.lineEditArchivo2.text().strip()
+
+        if not archivo_anterior or not archivo_nuevo:
+
+            QMessageBox.warning(
+                self,
+                "Archivos no seleccionados",
+                "Debes seleccionar los dos archivos Excel antes de guardar.",
+            )
+
+            return
+
+        # =========================================================
         # ELEGIR DESTINO
         # =========================================================
 
         respuesta = QMessageBox.question(
             self,
             "Guardar comparación",
-            "¿Cómo deseas guardar la comparación?",
+            "¿Quieres crear una nueva base de datos?\n\n"
+            "Sí → Crear una nueva base de datos\n"
+            "No → Utilizar una base de datos existente",
             buttons=(
                 QMessageBox.StandardButton.Yes
                 | QMessageBox.StandardButton.No
                 | QMessageBox.StandardButton.Cancel
             ),
+            defaultButton=QMessageBox.StandardButton.Yes,
         )
-
-        # ---------------------------------------------------------
-        # Sí = crear nueva
-        # No = utilizar existente
-        # Cancelar = salir
-        # ---------------------------------------------------------
 
         if respuesta == QMessageBox.StandardButton.Cancel:
             return
@@ -1018,8 +1040,8 @@ class MainWindow(QMainWindow):
         if respuesta == QMessageBox.StandardButton.Yes:
 
             nombre_bd = obtener_nombre_bd(
-                self.ui.lineEditArchivo1.text(),
-                self.ui.lineEditArchivo2.text(),
+                archivo_anterior,
+                archivo_nuevo,
             )
 
             ruta, _ = QFileDialog.getSaveFileName(
@@ -1049,14 +1071,12 @@ class MainWindow(QMainWindow):
                 return
 
         # =========================================================
-        # PEDIR IDENTIFICADOR
+        # PROPONER IDENTIFICADOR
         # =========================================================
 
-        identificador_propuesto = (
-            obtener_identificador_propuesto(
-                archivo_anterior,
-                archivo_nuevo,
-            )
+        identificador_propuesto = obtener_identificador_propuesto(
+            archivo_anterior,
+            archivo_nuevo,
         )
 
         identificador, aceptado = QInputDialog.getText(
@@ -1094,9 +1114,6 @@ class MainWindow(QMainWindow):
             item.text()
             for item in self.ui.listaColumnasComparar.selectedItems()
         ]
-
-        # archivo_anterior = self.ui.lineEditArchivo1.text()
-        # archivo_nuevo = self.ui.lineEditArchivo2.text()
 
         hoja_anterior = self.ui.comboBoxHoja1.currentText()
         hoja_nueva = self.ui.comboBoxHoja2.currentText()
@@ -1140,7 +1157,8 @@ class MainWindow(QMainWindow):
             "Comparación guardada",
             "La comparación se ha guardado correctamente.\n\n"
             f"Identificador: {identificador}\n"
-            f"Cambios guardados: {len(self.modelo_cambios.cambios)}\n"
+            f"Cambios guardados: "
+            f"{len(self.modelo_cambios.cambios)}\n\n"
             f"Base de datos:\n{ruta}",
         )
 
@@ -1167,7 +1185,23 @@ class MainWindow(QMainWindow):
         combo.addItems(identificadores)
 
         combo.blockSignals(False)
-        
+
+    def _obtener_modelo_visible_historico(self):
+        """
+        Obtiene el modelo que está utilizando actualmente
+        la tabla del histórico.
+
+        Si QFilterableTableView utiliza un modelo proxy
+        para filtrar/ordenar, devuelve dicho modelo.
+        """
+
+        modelo = self.ui.tableViewHistorico.model()
+
+        if modelo is None:
+            return None
+
+        return modelo
+
     def abrir_historico(self):
 
         ruta, _ = QFileDialog.getOpenFileName(
@@ -1223,6 +1257,214 @@ class MainWindow(QMainWindow):
                 f"No se ha podido abrir la base de datos:\n\n{error}",
             )
 
+    def exportar_historico_excel(self):
+        """
+        Exporta a Excel exactamente los registros que se están
+        mostrando actualmente en la tabla del histórico.
+
+        Respeta:
+        - filtros aplicados
+        - orden de las filas
+        - columnas visibles
+        """
+
+        tabla = self.ui.tableViewHistorico
+
+        # =========================================================
+        # OBTENER EL PROXY REAL DE FILTRADO
+        # =========================================================
+
+        modelo = tabla._filter_proxy
+
+        if modelo is None:
+
+            QMessageBox.warning(
+                self,
+                "Sin datos",
+                "No hay datos para exportar.",
+            )
+
+            return
+
+        # =========================================================
+        # COMPROBAR FILAS
+        # =========================================================
+
+        numero_filas = modelo.rowCount()
+
+        if numero_filas == 0:
+
+            QMessageBox.warning(
+                self,
+                "Sin datos",
+                "No hay registros visibles para exportar.",
+            )
+
+            return
+
+        # =========================================================
+        # ELEGIR ARCHIVO
+        # =========================================================
+
+        ruta, _ = QFileDialog.getSaveFileName(
+            self,
+            "Exportar histórico a Excel",
+            "Historico.xlsx",
+            "Archivos Excel (*.xlsx)",
+        )
+
+        if not ruta:
+            return
+
+        try:
+
+            libro = Workbook()
+
+            hoja = libro.active
+
+            hoja.title = "Histórico"
+
+            # =====================================================
+            # COLUMNAS
+            # =====================================================
+
+            columnas = modelo.columnCount()
+
+            columnas_exportar = []
+
+            for columna in range(columnas):
+
+                # Comprobar si la columna está visible
+                if tabla.isColumnHidden(columna):
+                    continue
+
+                encabezado = modelo.headerData(
+                    columna,
+                    Qt.Orientation.Horizontal,
+                    Qt.ItemDataRole.DisplayRole,
+                )
+
+                columnas_exportar.append(
+                    (
+                        columna,
+                        encabezado,
+                    )
+                )
+
+            # =====================================================
+            # CABECERAS
+            # =====================================================
+
+            for numero_columna, (_, encabezado) in enumerate(
+                columnas_exportar,
+                start=1,
+            ):
+
+                celda = hoja.cell(
+                    row=1,
+                    column=numero_columna,
+                    value=encabezado,
+                )
+
+                celda.font = Font(
+                    bold=True
+                )
+
+            # =====================================================
+            # FILAS FILTRADAS
+            # =====================================================
+
+            for fila in range(numero_filas):
+
+                for numero_columna, (
+                    columna,
+                    _,
+                ) in enumerate(
+                    columnas_exportar,
+                    start=1,
+                ):
+
+                    indice = modelo.index(
+                        fila,
+                        columna,
+                    )
+
+                    valor = modelo.data(
+                        indice,
+                        Qt.ItemDataRole.DisplayRole,
+                    )
+
+                    hoja.cell(
+                        row=fila + 2,
+                        column=numero_columna,
+                        value=valor,
+                    )
+
+            # =====================================================
+            # FORMATO
+            # =====================================================
+
+            hoja.freeze_panes = "A2"
+
+            hoja.auto_filter.ref = hoja.dimensions
+
+            # Ajustar ancho de columnas
+            for columna in hoja.columns:
+
+                longitud = 0
+
+                for celda in columna:
+
+                    if celda.value is not None:
+
+                        longitud = max(
+                            longitud,
+                            len(str(celda.value)),
+                        )
+
+                hoja.column_dimensions[
+                    columna[0].column_letter
+                ].width = min(
+                    longitud + 2,
+                    50,
+                )
+
+            # =====================================================
+            # GUARDAR
+            # =====================================================
+
+            libro.save(ruta)
+
+            # =====================================================
+            # CONFIRMACIÓN
+            # =====================================================
+
+            QMessageBox.information(
+                self,
+                "Exportación completada",
+                (
+                    "El histórico se ha exportado correctamente.\n\n"
+                    f"Registros exportados: {numero_filas}\n"
+                    f"Archivo:\n{ruta}"
+                ),
+            )
+
+            self.ui.statusBar.showMessage(
+                f"Histórico exportado: "
+                f"{numero_filas} registros."
+            )
+
+        except Exception as error:
+
+            QMessageBox.critical(
+                self,
+                "Error al exportar",
+                (
+                    "No se ha podido exportar el histórico:\n\n"
+                    f"{error}"
+                ),
+            )
+        
     def filtrar_historico(self):
 
         if self.repositorio_historico is None:

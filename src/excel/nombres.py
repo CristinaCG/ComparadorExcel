@@ -111,7 +111,7 @@ def obtener_identificador_propuesto(
         return "Comparación"
 
     if diferente_1 and diferente_2:
-        return f"{diferente_1} → {diferente_2}"
+        return f"{diferente_1}-{diferente_2}"
 
     if diferente_1:
         return diferente_1

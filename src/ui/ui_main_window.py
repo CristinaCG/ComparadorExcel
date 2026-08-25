@@ -138,7 +138,7 @@ class Ui_MainWindow(object):
 
         self.listaColumnasClave = QListWidget(self.groupBoxClave)
         self.listaColumnasClave.setObjectName(u"listaColumnasClave")
-        self.listaColumnasClave.setSelectionMode(QAbstractItemView.SelectionMode.MultiSelection)
+        self.listaColumnasClave.setSelectionMode(QAbstractItemView.NoSelection)
 
         self.verticalLayout_5.addWidget(self.listaColumnasClave)
 
@@ -161,7 +161,7 @@ class Ui_MainWindow(object):
 
         self.listaColumnasComparar = QListWidget(self.groupBoxColumnasComparar)
         self.listaColumnasComparar.setObjectName(u"listaColumnasComparar")
-        self.listaColumnasComparar.setSelectionMode(QAbstractItemView.SelectionMode.MultiSelection)
+        self.listaColumnasComparar.setSelectionMode(QAbstractItemView.NoSelection)
 
         self.verticalLayout_6.addWidget(self.listaColumnasComparar)
 
@@ -203,7 +203,6 @@ class Ui_MainWindow(object):
 
         self.labelResumen = QLabel(self.tab_resultados)
         self.labelResumen.setObjectName(u"labelResumen")
-        self.labelResumen.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
 
         self.horizontalLayout_3.addWidget(self.labelResumen)
 
@@ -354,7 +353,6 @@ class Ui_MainWindow(object):
         self.verticalLayout_11.setObjectName(u"verticalLayout_11")
         self.labelResumenHistorico = QLabel(self.groupBoxDetalleHistorico)
         self.labelResumenHistorico.setObjectName(u"labelResumenHistorico")
-        self.labelResumenHistorico.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTrailing|Qt.AlignmentFlag.AlignVCenter)
 
         self.verticalLayout_11.addWidget(self.labelResumenHistorico)
 
@@ -405,6 +403,11 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_8.addWidget(self.groupBoxDetalleHistorico)
 
+        self.pushButtonExportarHistorico = QPushButton(self.tab_historico)
+        self.pushButtonExportarHistorico.setObjectName(u"pushButtonExportarHistorico")
+
+        self.verticalLayout_8.addWidget(self.pushButtonExportarHistorico)
+
         self.tabWidget.addTab(self.tab_historico, "")
 
         self.horizontalLayout_10.addWidget(self.tabWidget)
@@ -453,6 +456,7 @@ class Ui_MainWindow(object):
         self.labelResumenHistorico.setText("")
         self.labelValor1Historico.setText(QCoreApplication.translate("MainWindow", u"Valor 1", None))
         self.labelValor2Historico.setText(QCoreApplication.translate("MainWindow", u"Valor 2", None))
+        self.pushButtonExportarHistorico.setText(QCoreApplication.translate("MainWindow", u"Exportar a Excel", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_historico), QCoreApplication.translate("MainWindow", u"Hist\u00f3rico", None))
     # retranslateUi
 

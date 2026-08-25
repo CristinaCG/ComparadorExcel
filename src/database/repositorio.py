@@ -66,37 +66,95 @@ class RepositorioSQLite:
 
         with conectar(self.ruta) as conexion:
 
-            cursor = conexion.execute(
-                """
-                INSERT INTO comparaciones (
-                    identificador,
-                    archivo_anterior,
-                    archivo_nuevo,
-                    hoja_anterior,
-                    hoja_nueva,
-                    columnas_clave,
-                    columnas_comparadas
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    identificador,
-                    archivo_anterior,
-                    archivo_nuevo,
-                    hoja_anterior,
-                    hoja_nueva,
-                    json.dumps(columnas_clave, ensure_ascii=False),
-                    json.dumps(
-                        columnas_comparadas,
-                        ensure_ascii=False,
-                    ),
-                ),
-            )
+            # =========================================================
+            # COMPROBAR SI YA EXISTE EL IDENTIFICADOR
+            # =========================================================
 
-            comparacion_id = cursor.lastrowid
+            comparacion_existente = conexion.execute(
+                """
+                SELECT id
+                FROM comparaciones
+                WHERE identificador = ?
+                LIMIT 1
+                """,
+                (identificador,),
+            ).fetchone()
+
+            # =========================================================
+            # SI NO EXISTE, CREAR LA COMPARACIÓN
+            # =========================================================
+
+            if comparacion_existente is None:
+
+                cursor = conexion.execute(
+                    """
+                    INSERT INTO comparaciones (
+                        identificador,
+                        archivo_anterior,
+                        archivo_nuevo,
+                        hoja_anterior,
+                        hoja_nueva,
+                        columnas_clave,
+                        columnas_comparadas
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        identificador,
+                        archivo_anterior,
+                        archivo_nuevo,
+                        hoja_anterior,
+                        hoja_nueva,
+                        json.dumps(
+                            columnas_clave,
+                            ensure_ascii=False,
+                        ),
+                        json.dumps(
+                            columnas_comparadas,
+                            ensure_ascii=False,
+                        ),
+                    ),
+                )
+
+                comparacion_id = cursor.lastrowid
+
+            # =========================================================
+            # SI YA EXISTE, UTILIZAR ESA COMPARACIÓN
+            # =========================================================
+
+            else:
+
+                comparacion_id = comparacion_existente["id"]
+
+            # =========================================================
+            # INSERTAR SOLO CAMBIOS QUE NO EXISTAN
+            # =========================================================
 
             for cambio in cambios:
 
+                existe = conexion.execute(
+                    """
+                    SELECT 1
+                    FROM cambios
+                    WHERE comparacion_id = ?
+                    AND clave = ?
+                    AND tipo = ?
+                    AND columna = ?
+                    LIMIT 1
+                    """,
+                    (
+                        comparacion_id,
+                        cambio.clave,
+                        cambio.tipo,
+                        cambio.columna,
+                    ),
+                ).fetchone()
+
+                # Ya existe → no hacemos nada
+                if existe is not None:
+                    continue
+
+                # No existe → insertar
                 conexion.execute(
                     """
                     INSERT INTO cambios (
@@ -120,7 +178,6 @@ class RepositorioSQLite:
                 )
 
             return comparacion_id
-
     # def obtener_comparaciones(self):
     #     self.inicializar()
 
