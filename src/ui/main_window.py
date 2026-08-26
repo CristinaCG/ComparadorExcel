@@ -9,6 +9,10 @@ from PySide6.QtCore import (
     QSortFilterProxyModel,
 )
 
+from PySide6.QtGui import (
+    QIcon,
+)
+
 import qtawesome as qta
 
 from PySide6.QtWidgets import (
@@ -19,6 +23,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QComboBox,
     QApplication,
+    QHeaderView,
 )
 
 from src.ui.themes import TEMAS
@@ -130,6 +135,8 @@ class MainWindow(QMainWindow):
 
         self._configurar_iconos()
 
+        self._configurar_ventana_y_tablas()
+
     # =========================================================
     # INICIALIZACIÓN
     # =========================================================
@@ -203,6 +210,21 @@ class MainWindow(QMainWindow):
         else:
             self.label_estado_db.setText("⚪ Sin base de datos cargada")
 
+    def _configurar_ventana_y_tablas(self):
+        """
+        Configura el icono de la ventana y el ajuste de ancho de columnas
+        en las tablas.
+        """
+
+        # Icono de ventana
+        ruta_icono = Path("images/pine logo.png")
+        if ruta_icono.exists():
+            self.setWindowIcon(QIcon(str(ruta_icono)))
+
+        # Ajuste de tablas para estirar columnas y ocupar todo el ancho disponible
+        for tabla in (self.ui.tableViewCambios, self.ui.tableViewHistorico):
+            tabla.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+
     def _configurar_iconos(self):
         """
         Asigna iconos a los elementos de la interfaz usando QtAwesome.
@@ -214,14 +236,14 @@ class MainWindow(QMainWindow):
             self.ui.tabWidget.setTabIcon(1, qta.icon("fa5s.poll", color="#106EBE"))
             self.ui.tabWidget.setTabIcon(2, qta.icon("fa5s.history", color="#106EBE"))
 
-            # Iconos para botones principales
-            self.ui.pushButtonArchivo1.setIcon(qta.icon("fa5s.file-excel"))
-            self.ui.pushButtonArchivo2.setIcon(qta.icon("fa5s.file-excel"))
-            self.ui.pushButtonComparar.setIcon(qta.icon("fa5s.play"))
-            self.ui.pushButtonGuardarComparacion.setIcon(qta.icon("fa5s.save"))
-            self.ui.pushButtonAbrirHistorico.setIcon(qta.icon("fa5s.folder-open"))
-            self.ui.pushButtonEliminarComparacion.setIcon(qta.icon("fa5s.trash-alt"))
-            self.ui.pushButtonExportarHistorico.setIcon(qta.icon("fa5s.file-export"))
+            # Iconos en blanco para los botones principales
+            self.ui.pushButtonArchivo1.setIcon(qta.icon("fa5s.file-excel", color="#FFFFFF"))
+            self.ui.pushButtonArchivo2.setIcon(qta.icon("fa5s.file-excel", color="#FFFFFF"))
+            self.ui.pushButtonComparar.setIcon(qta.icon("fa5s.play", color="#FFFFFF"))
+            self.ui.pushButtonGuardarComparacion.setIcon(qta.icon("fa5s.save", color="#FFFFFF"))
+            self.ui.pushButtonAbrirHistorico.setIcon(qta.icon("fa5s.folder-open", color="#FFFFFF"))
+            self.ui.pushButtonEliminarComparacion.setIcon(qta.icon("fa5s.trash-alt", color="#FFFFFF"))
+            self.ui.pushButtonExportarHistorico.setIcon(qta.icon("fa5s.file-export", color="#FFFFFF"))
 
         except Exception:
             pass
