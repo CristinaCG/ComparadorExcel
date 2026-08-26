@@ -12,13 +12,30 @@ from PySide6.QtGui import (
 from PySide6.QtWidgets import QApplication
 
 
-def _obtener_colores_cambio(tipo: str, es_oscuro: bool):
+def _es_tema_oscuro() -> bool:
+    """
+    Comprueba si el estilo QSS actual corresponde al tema oscuro.
+    """
+
+    app = QApplication.instance()
+
+    if app and hasattr(app, "styleSheet"):
+        qss = app.styleSheet()
+
+        # #0F172A es el color de fondo distintivo de Pine Oscuro
+        if "#0F172A" in qss:
+            return True
+
+    return False
+
+
+def _obtener_colores_cambio(tipo: str):
     """
     Devuelve la pareja (fondo, texto) con contraste adecuado
     según el tipo de cambio y si el tema es oscuro o claro.
     """
 
-    if es_oscuro:
+    if _es_tema_oscuro():
         if tipo == "NUEVO":
             return QColor(20, 60, 30), QColor(140, 230, 160)
         if tipo == "ELIMINADO":
@@ -101,11 +118,7 @@ class ModeloHistorico(QAbstractTableModel):
         # ESTILOS DE COLOR DE FONDO Y TEXTO
         # =========================================================
 
-        paleta = QApplication.palette()
-        fondo_base = paleta.color(QPalette.ColorRole.Base)
-        es_oscuro = fondo_base.lightness() < 128
-
-        fondo, texto = _obtener_colores_cambio(cambio["tipo"], es_oscuro)
+        fondo, texto = _obtener_colores_cambio(cambio["tipo"])
 
         if role == Qt.ItemDataRole.BackgroundRole:
             return fondo
