@@ -263,7 +263,7 @@ class MainWindow(QMainWindow):
         """
 
         # Icono de ventana
-        ruta_icono = Path("images/pine_logo.ico")
+        ruta_icono = Path("images/pine logo.png")
         if ruta_icono.exists():
             self.setWindowIcon(QIcon(str(ruta_icono)))
 
@@ -1490,10 +1490,16 @@ class MainWindow(QMainWindow):
         # ELEGIR ARCHIVO
         # =========================================================
 
+        nombre_sugerido = "Historico.xlsx"
+        if hasattr(self, "ruta_historico") and self.ruta_historico:
+            stem = Path(self.ruta_historico).stem
+            if stem:
+                nombre_sugerido = f"{stem}.xlsx"
+
         ruta, _ = QFileDialog.getSaveFileName(
             self,
             "Exportar histórico a Excel",
-            "Historico.xlsx",
+            nombre_sugerido,
             "Archivos Excel (*.xlsx)",
         )
 
