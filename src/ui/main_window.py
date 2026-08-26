@@ -263,7 +263,7 @@ class MainWindow(QMainWindow):
         """
 
         # Icono de ventana
-        ruta_icono = Path("images/pine logo.png")
+        ruta_icono = Path("images/pine_logo.ico")
         if ruta_icono.exists():
             self.setWindowIcon(QIcon(str(ruta_icono)))
 
