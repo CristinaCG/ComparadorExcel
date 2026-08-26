@@ -2149,7 +2149,7 @@ class MainWindow(QMainWindow):
                     df_ant = leer_excel(self.rutas[0], self.hoja)
 
                     for i in range(len(self.rutas) - 1):
-                        if self.isInterrupted():
+                        if self.isInterruptionRequested():
                             break
 
                         r_ant = self.rutas[i]
