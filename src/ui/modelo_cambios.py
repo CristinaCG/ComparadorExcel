@@ -27,11 +27,11 @@ def _obtener_colores_cambio(tipo: str, es_oscuro: bool):
             return QColor(65, 50, 15), QColor(255, 220, 130)
     else:
         if tipo == "NUEVO":
-            return QColor(230, 245, 233), QColor(20, 90, 40)
+            return QColor("#C3FAC4"), QColor("#1A2530")
         if tipo == "ELIMINADO":
-            return QColor(253, 235, 235), QColor(160, 30, 30)
+            return QColor("#FF746C"), QColor("#FFFFFF")
         if tipo == "MODIFICADO":
-            return QColor(255, 248, 225), QColor(140, 90, 0)
+            return QColor("#FFEE8C"), QColor("#1A2530")
 
     return None, None
 

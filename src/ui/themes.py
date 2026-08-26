@@ -102,12 +102,25 @@ QComboBox::drop-down {
     padding-right: 8px;
 }
 
-QComboBox QAbstractItemView {
+QComboBox QAbstractItemView, QMenu, QMenu::item {
     background-color: #FFFFFF;
     color: #1A2530;
     selection-background-color: #106EBE;
     selection-color: #FFFFFF;
     border: 1px solid #C5D1DE;
+}
+
+/* Menús de filtrado de encabezados de tabla (QFilterableTableView / qextrawidgets) */
+QMenu {
+    background-color: #FFFFFF;
+    color: #1A2530;
+    border: 1px solid #C5D1DE;
+    padding: 4px;
+}
+
+QMenu::item:selected {
+    background-color: #106EBE;
+    color: #FFFFFF;
 }
 
 /* QTableView */
@@ -252,6 +265,18 @@ QComboBox QAbstractItemView {
     border: 1px solid #334155;
 }
 
+/* Menús de filtrado de encabezados de tabla (QFilterableTableView / qextrawidgets) */
+QMenu, QMenu::item {
+    background-color: #1E293B;
+    color: #F8FAFC;
+    border: 1px solid #334155;
+}
+
+QMenu::item:selected {
+    background-color: #0284C7;
+    color: #FFFFFF;
+}
+
 /* QTableView */
 QTableView {
     background-color: #0F172A;
@@ -392,6 +417,18 @@ QComboBox QAbstractItemView {
     selection-background-color: #7C4DFF;
     selection-color: #FFFFFF;
     border: 1px solid #D1C4E9;
+}
+
+/* Menús de filtrado de encabezados de tabla (QFilterableTableView / qextrawidgets) */
+QMenu, QMenu::item {
+    background-color: #FFFFFF;
+    color: #2D1B4E;
+    border: 1px solid #D1C4E9;
+}
+
+QMenu::item:selected {
+    background-color: #7C4DFF;
+    color: #FFFFFF;
 }
 
 /* QTableView */
