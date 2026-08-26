@@ -202,7 +202,20 @@ class RepositorioSQLite:
                 """
             )
 
-            return cursor.fetchall()
+            registros = cursor.fetchall()
+            return [
+                {
+                    "id": reg[0],
+                    "identificador": reg[1],
+                    "fecha": reg[2],
+                    "archivo_anterior": reg[3],
+                    "archivo_nuevo": reg[4],
+                    "hoja_anterior": reg[5],
+                    "hoja_nueva": reg[6],
+                    "num_cambios": reg[7],
+                }
+                for reg in registros
+            ]
 
     def obtener_comparacion(self, comparacion_id: int):
         self.inicializar()

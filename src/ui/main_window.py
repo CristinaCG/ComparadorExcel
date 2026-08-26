@@ -9,12 +9,24 @@ from PySide6.QtCore import (
     QSortFilterProxyModel,
 )
 
+from PySide6.QtGui import (
+    QIcon,
+)
+
+import qtawesome as qta
+
 from PySide6.QtWidgets import (
     QMainWindow,
     QFileDialog,
     QMessageBox,
     QInputDialog,
+    QLabel,
+    QComboBox,
+    QApplication,
+    QHeaderView,
 )
+
+from src.ui.themes import TEMAS
 
 from src.database.repositorio import RepositorioSQLite
 
@@ -119,6 +131,58 @@ class MainWindow(QMainWindow):
 
         self._inicializar_interfaz()
 
+        self._configurar_contenido_ayuda()
+
+        self._configurar_statusbar_y_temas()
+
+        self._configurar_iconos()
+
+        self._configurar_ventana_y_tablas()
+
+        self.ui.tabWidget.currentChanged.connect(self._actualizar_iconos_pestanas)
+        self._actualizar_iconos_pestanas(self.ui.tabWidget.currentIndex())
+
+    def _configurar_contenido_ayuda(self):
+        """
+        Configura el texto explicativo y de contacto en el QTextBrowser
+        de la pestaña 'Ayuda'.
+        """
+
+        html_contenido = """
+        <div style="font-family: 'Segoe UI', sans-serif; padding: 10px;">
+            <h2 style="color: #106EBE; margin-bottom: 5px;">📘 Guía de Uso del Comparador de Excel</h2>
+            <p>Bienvenido al <b>Comparador de Excel</b>. Esta herramienta te permite comparar versiones de archivos Excel (como listas de cables F110) y llevar un registro organizado de los cambios.</p>
+
+            <hr style="border: 0; height: 1px; background: #DCE3EC; margin: 15px 0;">
+
+            <h3 style="color: #0F4C81;">🚀 Pasos para Realizar una Comparación</h3>
+            <ol style="line-height: 1.6;">
+                <li><b>Pestaña "Comparar":</b> Selecciona el <b>Excel 1</b> (versión anterior) y el <b>Excel 2</b> (versión nueva) usando los botones "Seleccionar".</li>
+                <li><b>Hojas de cálculo:</b> Selecciona la hoja correspondiente para cada archivo.</li>
+                <li><b>Columnas clave:</b> Marca las columnas que identifican únicamente cada registro (por ejemplo: <i>Código, ID de Cable, Tag</i>).</li>
+                <li><b>Columnas a comparar:</b> Selecciona las columnas cuyos valores deseas inspeccionar en búsqueda de diferencias.</li>
+                <li><b>Comparar:</b> Haz clic en el botón <b>"Comparar archivos"</b> para ver los resultados automáticamente.</li>
+            </ol>
+
+            <h3 style="color: #0F4C81;">💾 Guardar e Histórico</h3>
+            <ul style="line-height: 1.6;">
+                <li>En la pestaña <b>"Resultados"</b>, haz clic en <b>"Guardar comparación"</b> para almacenar los cambios detectados en una base de datos SQLite.</li>
+                <li>En la pestaña <b>"Histórico"</b>, puedes abrir una base de datos SQLite guardada para consultar comparaciones anteriores o exportar el histórico completo a Excel.</li>
+            </ul>
+
+            <hr style="border: 0; height: 1px; background: #DCE3EC; margin: 15px 0;">
+
+            <h3 style="color: #106EBE;">✉️ Soporte y Contacto</h3>
+            <p>Si tienes alguna sugerencia, duda o necesitas ayuda con la aplicación, ponte en contacto con:</p>
+            <div style="background-color: #EBF0F5; border-left: 4px solid #106EBE; padding: 12px; border-radius: 4px; margin-top: 10px;">
+                <b>Cristina Caravaca</b><br>
+                Correo electrónico: <a href="mailto:cristina.caravaca@pine.zimacorp.es" style="color: #106EBE; font-weight: bold;">cristina.caravaca@pine.zimacorp.es</a>
+            </div>
+        </div>
+        """
+
+        self.ui.textBrowserAyuda.setHtml(html_contenido)
+
     # =========================================================
     # INICIALIZACIÓN
     # =========================================================
@@ -134,6 +198,122 @@ class MainWindow(QMainWindow):
         self.ui.labelResumen.setText(
             "0 cambios encontrados"
         )
+
+    def _configurar_statusbar_y_temas(self):
+        """
+        Configura el indicador de base de datos activa y el selector
+        de temas en la StatusBar.
+        """
+
+        # Indicador DB activa (izquierda)
+        self.label_estado_db = QLabel("⚪ Sin base de datos cargada")
+        self.ui.statusBar.addWidget(self.label_estado_db, 1)
+
+        # Selector de Tema (derecha)
+        label_tema = QLabel("Tema: ")
+        self.combo_tema = QComboBox()
+        self.combo_tema.addItems(list(TEMAS.keys()))
+
+        # Cargar tema guardado
+        tema_guardado = self.repositorio_configuracion.obtener_preferencia(
+            "tema",
+            "Pine Azul (Claro)",
+        )
+
+        if tema_guardado in TEMAS:
+            self.combo_tema.setCurrentText(tema_guardado)
+            self.cambiar_tema(tema_guardado)
+
+        self.combo_tema.currentTextChanged.connect(self.cambiar_tema)
+
+        self.ui.statusBar.addPermanentWidget(label_tema)
+        self.ui.statusBar.addPermanentWidget(self.combo_tema)
+
+    def cambiar_tema(self, nombre_tema: str):
+        """
+        Aplica el estilo QSS correspondiente al tema seleccionado
+        y guarda la preferencia.
+        """
+
+        if nombre_tema in TEMAS:
+            app = QApplication.instance()
+            if app:
+                app.setStyleSheet(TEMAS[nombre_tema])
+
+            self.repositorio_configuracion.guardar_preferencia(
+                "tema",
+                nombre_tema,
+            )
+
+    def _actualizar_estado_db(self, ruta: str | None = None):
+        """
+        Actualiza la etiqueta de la StatusBar con la DB activa.
+        """
+
+        if ruta:
+            nombre = Path(ruta).name
+            self.label_estado_db.setText(f"🟢 BD Activa: {nombre}")
+        else:
+            self.label_estado_db.setText("⚪ Sin base de datos cargada")
+
+    def _configurar_ventana_y_tablas(self):
+        """
+        Configura el icono de la ventana y el ajuste de ancho de columnas
+        en las tablas.
+        """
+
+        # Icono de ventana
+        ruta_icono = Path("images/pine_logo.ico")
+        if ruta_icono.exists():
+            self.setWindowIcon(QIcon(str(ruta_icono)))
+
+        # Ajuste de tablas para estirar columnas y ocupar todo el ancho disponible
+        for tabla in (self.ui.tableViewCambios, self.ui.tableViewHistorico):
+            tabla.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+
+    def _actualizar_iconos_pestanas(self, indice_activo: int = 0):
+        """
+        Actualiza el color de los iconos de las pestañas:
+        - Blanco (#FFFFFF) para la pestaña seleccionada
+        - Azul/Acento (#106EBE) para las pestañas no seleccionadas
+        """
+
+        iconos = [
+            "fa5s.balance-scale",
+            "fa5s.poll",
+            "fa5s.history",
+            "fa5s.question-circle",
+        ]
+
+        try:
+            for i, nombre_icono in enumerate(iconos):
+                if i >= self.ui.tabWidget.count():
+                    break
+
+                color = "#FFFFFF" if i == indice_activo else "#106EBE"
+                self.ui.tabWidget.setTabIcon(i, qta.icon(nombre_icono, color=color))
+        except Exception:
+            pass
+
+    def _configurar_iconos(self):
+        """
+        Asigna iconos a los elementos de la interfaz usando QtAwesome.
+        """
+
+        try:
+            self._actualizar_iconos_pestanas(self.ui.tabWidget.currentIndex())
+
+            # Iconos en blanco para los botones principales
+            self.ui.pushButtonArchivo1.setIcon(qta.icon("fa5s.file-excel", color="#FFFFFF"))
+            self.ui.pushButtonArchivo2.setIcon(qta.icon("fa5s.file-excel", color="#FFFFFF"))
+            self.ui.pushButtonComparar.setIcon(qta.icon("fa5s.play", color="#FFFFFF"))
+            self.ui.pushButtonGuardarComparacion.setIcon(qta.icon("fa5s.save", color="#FFFFFF"))
+            self.ui.pushButtonAbrirHistorico.setIcon(qta.icon("fa5s.folder-open", color="#FFFFFF"))
+            self.ui.pushButtonEliminarComparacion.setIcon(qta.icon("fa5s.trash-alt", color="#FFFFFF"))
+            self.ui.pushButtonExportarHistorico.setIcon(qta.icon("fa5s.file-export", color="#FFFFFF"))
+
+        except Exception:
+            pass
 
     # =========================================================
     # EVENTOS
@@ -1166,6 +1346,8 @@ class MainWindow(QMainWindow):
             f"Comparación guardada: {identificador}"
         )
 
+        self._actualizar_estado_db(ruta)
+
     def _actualizar_identificadores_historico(self, cambios):
         combo = self.ui.comboBoxIdentificadorHistorico
 
@@ -1249,6 +1431,8 @@ class MainWindow(QMainWindow):
                 "Histórico cargado correctamente."
             )
 
+            self._actualizar_estado_db(ruta)
+
         except Exception as error:
 
             QMessageBox.critical(
@@ -1306,10 +1490,16 @@ class MainWindow(QMainWindow):
         # ELEGIR ARCHIVO
         # =========================================================
 
+        nombre_sugerido = "Historico.xlsx"
+        if hasattr(self, "ruta_historico") and self.ruta_historico:
+            stem = Path(self.ruta_historico).stem
+            if stem:
+                nombre_sugerido = f"{stem}.xlsx"
+
         ruta, _ = QFileDialog.getSaveFileName(
             self,
             "Exportar histórico a Excel",
-            "Historico.xlsx",
+            nombre_sugerido,
             "Archivos Excel (*.xlsx)",
         )
 
