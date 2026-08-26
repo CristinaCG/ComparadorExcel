@@ -94,7 +94,7 @@ def test_identificador_propuesto():
     )
 
     assert resultado == (
-        "20260818 → 20260820"
+        "20260818-20260820"
     )
 
 

@@ -178,30 +178,31 @@ class RepositorioSQLite:
                 )
 
             return comparacion_id
-    # def obtener_comparaciones(self):
-    #     self.inicializar()
 
-    #     with conectar(self.ruta) as conexion:
-    #         cursor = conexion.execute(
-    #             """
-    #             SELECT
-    #                 c.id,
-    #                 c.identificador,
-    #                 c.fecha,
-    #                 c.archivo_anterior,
-    #                 c.archivo_nuevo,
-    #                 c.hoja_anterior,
-    #                 c.hoja_nueva,
-    #                 COUNT(ch.id) AS num_cambios
-    #             FROM comparaciones c
-    #             LEFT JOIN cambios ch
-    #                 ON ch.comparacion_id = c.id
-    #             GROUP BY c.id
-    #             ORDER BY c.fecha DESC
-    #             """
-    #         )
+    def obtener_comparaciones(self):
+        self.inicializar()
 
-    #         return cursor.fetchall()
+        with conectar(self.ruta) as conexion:
+            cursor = conexion.execute(
+                """
+                SELECT
+                    c.id,
+                    c.identificador,
+                    c.fecha,
+                    c.archivo_anterior,
+                    c.archivo_nuevo,
+                    c.hoja_anterior,
+                    c.hoja_nueva,
+                    COUNT(ch.id) AS num_cambios
+                FROM comparaciones c
+                LEFT JOIN cambios ch
+                    ON ch.comparacion_id = c.id
+                GROUP BY c.id
+                ORDER BY c.fecha DESC
+                """
+            )
+
+            return cursor.fetchall()
 
     def obtener_comparacion(self, comparacion_id: int):
         self.inicializar()
@@ -256,7 +257,6 @@ class RepositorioSQLite:
 
     def obtener_cambios(self, comparacion_id: int):
         self.inicializar()
-        print("obtener_cambios")
         with conectar(self.ruta) as conexion:
             cambios = conexion.execute(
                 """
