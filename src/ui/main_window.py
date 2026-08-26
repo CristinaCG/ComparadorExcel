@@ -464,49 +464,24 @@ class MainWindow(QMainWindow):
         mostrar_anterior: bool,
     ) -> str:
         """
-        Genera HTML resaltando con fondo amarillo suave las partes
-        diferentes entre el valor anterior y el nuevo.
-
-        El color se adapta al tema claro/oscuro de Qt.
+        Genera HTML resaltando las partes diferentes entre el valor anterior
+        y el nuevo utilizando el mismo color que la fila MODIFICADO según el tema.
         """
 
         # ---------------------------------------------------------
-        # Color de resaltado según el tema
+        # Color de resaltado idéntico al color MODIFICADO del tema
         # ---------------------------------------------------------
 
-        from PySide6.QtWidgets import QApplication
-        from PySide6.QtGui import QPalette
+        from src.ui.modelo_cambios import _obtener_colores_cambio
 
-        paleta = QApplication.palette()
+        fondo_mod, texto_mod = _obtener_colores_cambio("MODIFICADO")
 
-        fondo = paleta.color(
-            QPalette.ColorRole.Base
-        )
-
-        # Amarillo de referencia
-        amarillo = (220, 180, 40)
-
-        # En función del fondo actual hacemos una mezcla
-        porcentaje = 0.35
-
-        rojo = int(
-            fondo.red() * (1 - porcentaje)
-            + amarillo[0] * porcentaje
-        )
-
-        verde = int(
-            fondo.green() * (1 - porcentaje)
-            + amarillo[1] * porcentaje
-        )
-
-        azul = int(
-            fondo.blue() * (1 - porcentaje)
-            + amarillo[2] * porcentaje
-        )
-
-        color_resaltado = (
-            f"rgb({rojo},{verde},{azul})"
-        )
+        if fondo_mod:
+            color_resaltado = fondo_mod.name()
+            color_texto = texto_mod.name() if texto_mod else "#000000"
+        else:
+            color_resaltado = "#FFEE8C"
+            color_texto = "#1A2530"
 
         # ---------------------------------------------------------
         # Comparar textos
@@ -549,7 +524,7 @@ class MainWindow(QMainWindow):
             if etiqueta != "equal":
 
                 texto = (
-                    f'<span style="background-color: {color_resaltado};">'
+                    f'<span style="background-color: {color_resaltado}; color: {color_texto}; font-weight: bold;">'
                     f"{texto}"
                     "</span>"
                 )

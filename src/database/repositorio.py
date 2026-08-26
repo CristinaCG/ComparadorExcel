@@ -65,7 +65,6 @@ class RepositorioSQLite:
         self.inicializar()
 
         with conectar(self.ruta) as conexion:
-            conexion.execute("BEGIN TRANSACTION")
 
             comparacion_existente = conexion.execute(
                 """
@@ -112,16 +111,18 @@ class RepositorioSQLite:
                 comparacion_id = comparacion_existente["id"]
 
             # Obtener claves existentes para esta comparación en un único query
-            cambios_existentes = set(
-                conexion.execute(
-                    """
-                    SELECT clave, tipo, COALESCE(columna, '')
-                    FROM cambios
-                    WHERE comparacion_id = ?
-                    """,
-                    (comparacion_id,),
-                ).fetchall()
-            )
+            registros_existentes = conexion.execute(
+                """
+                SELECT clave, tipo, COALESCE(columna, '')
+                FROM cambios
+                WHERE comparacion_id = ?
+                """,
+                (comparacion_id,),
+            ).fetchall()
+
+            cambios_existentes = {
+                (reg[0], reg[1], reg[2]) for reg in registros_existentes
+            }
 
             registros_insertar = []
 
@@ -159,8 +160,6 @@ class RepositorioSQLite:
                     """,
                     registros_insertar,
                 )
-
-            conexion.commit()
 
             return comparacion_id
 
