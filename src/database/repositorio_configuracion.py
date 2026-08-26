@@ -74,6 +74,15 @@ class RepositorioConfiguracion:
                 """
             )
 
+            conexion.execute(
+                """
+                CREATE TABLE IF NOT EXISTS preferencias_globales (
+                    clave TEXT PRIMARY KEY,
+                    valor TEXT NOT NULL
+                )
+                """
+            )
+
     def obtener_configuracion(self, firma: str):
 
         self.inicializar()
@@ -164,4 +173,34 @@ class RepositorioConfiguracion:
                     ),
                     ahora,
                 ),
+            )
+
+    def obtener_preferencia(self, clave: str, valor_defecto: str | None = None) -> str | None:
+        self.inicializar()
+
+        with conectar(self.ruta) as conexion:
+            registro = conexion.execute(
+                """
+                SELECT valor FROM preferencias_globales WHERE clave = ?
+                """,
+                (clave,),
+            ).fetchone()
+
+            if registro is None:
+                return valor_defecto
+
+            return registro[0]
+
+    def guardar_preferencia(self, clave: str, valor: str) -> None:
+        self.inicializar()
+
+        with conectar(self.ruta) as conexion:
+            conexion.execute(
+                """
+                INSERT INTO preferencias_globales (clave, valor)
+                VALUES (?, ?)
+                ON CONFLICT(clave)
+                DO UPDATE SET valor = excluded.valor
+                """,
+                (clave, valor),
             )

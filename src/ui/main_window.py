@@ -9,12 +9,19 @@ from PySide6.QtCore import (
     QSortFilterProxyModel,
 )
 
+import qtawesome as qta
+
 from PySide6.QtWidgets import (
     QMainWindow,
     QFileDialog,
     QMessageBox,
     QInputDialog,
+    QLabel,
+    QComboBox,
+    QApplication,
 )
+
+from src.ui.themes import TEMAS
 
 from src.database.repositorio import RepositorioSQLite
 
@@ -119,6 +126,10 @@ class MainWindow(QMainWindow):
 
         self._inicializar_interfaz()
 
+        self._configurar_statusbar_y_temas()
+
+        self._configurar_iconos()
+
     # =========================================================
     # INICIALIZACIÓN
     # =========================================================
@@ -134,6 +145,86 @@ class MainWindow(QMainWindow):
         self.ui.labelResumen.setText(
             "0 cambios encontrados"
         )
+
+    def _configurar_statusbar_y_temas(self):
+        """
+        Configura el indicador de base de datos activa y el selector
+        de temas en la StatusBar.
+        """
+
+        # Indicador DB activa (izquierda)
+        self.label_estado_db = QLabel("⚪ Sin base de datos cargada")
+        self.ui.statusBar.addWidget(self.label_estado_db, 1)
+
+        # Selector de Tema (derecha)
+        label_tema = QLabel("Tema: ")
+        self.combo_tema = QComboBox()
+        self.combo_tema.addItems(list(TEMAS.keys()))
+
+        # Cargar tema guardado
+        tema_guardado = self.repositorio_configuracion.obtener_preferencia(
+            "tema",
+            "Pine Azul (Claro)",
+        )
+
+        if tema_guardado in TEMAS:
+            self.combo_tema.setCurrentText(tema_guardado)
+            self.cambiar_tema(tema_guardado)
+
+        self.combo_tema.currentTextChanged.connect(self.cambiar_tema)
+
+        self.ui.statusBar.addPermanentWidget(label_tema)
+        self.ui.statusBar.addPermanentWidget(self.combo_tema)
+
+    def cambiar_tema(self, nombre_tema: str):
+        """
+        Aplica el estilo QSS correspondiente al tema seleccionado
+        y guarda la preferencia.
+        """
+
+        if nombre_tema in TEMAS:
+            app = QApplication.instance()
+            if app:
+                app.setStyleSheet(TEMAS[nombre_tema])
+
+            self.repositorio_configuracion.guardar_preferencia(
+                "tema",
+                nombre_tema,
+            )
+
+    def _actualizar_estado_db(self, ruta: str | None = None):
+        """
+        Actualiza la etiqueta de la StatusBar con la DB activa.
+        """
+
+        if ruta:
+            nombre = Path(ruta).name
+            self.label_estado_db.setText(f"🟢 BD Activa: {nombre}")
+        else:
+            self.label_estado_db.setText("⚪ Sin base de datos cargada")
+
+    def _configurar_iconos(self):
+        """
+        Asigna iconos a los elementos de la interfaz usando QtAwesome.
+        """
+
+        try:
+            # Iconos para pestañas
+            self.ui.tabWidget.setTabIcon(0, qta.icon("fa5s.balance-scale", color="#106EBE"))
+            self.ui.tabWidget.setTabIcon(1, qta.icon("fa5s.poll", color="#106EBE"))
+            self.ui.tabWidget.setTabIcon(2, qta.icon("fa5s.history", color="#106EBE"))
+
+            # Iconos para botones principales
+            self.ui.pushButtonArchivo1.setIcon(qta.icon("fa5s.file-excel"))
+            self.ui.pushButtonArchivo2.setIcon(qta.icon("fa5s.file-excel"))
+            self.ui.pushButtonComparar.setIcon(qta.icon("fa5s.play"))
+            self.ui.pushButtonGuardarComparacion.setIcon(qta.icon("fa5s.save"))
+            self.ui.pushButtonAbrirHistorico.setIcon(qta.icon("fa5s.folder-open"))
+            self.ui.pushButtonEliminarComparacion.setIcon(qta.icon("fa5s.trash-alt"))
+            self.ui.pushButtonExportarHistorico.setIcon(qta.icon("fa5s.file-export"))
+
+        except Exception:
+            pass
 
     # =========================================================
     # EVENTOS
@@ -1166,6 +1257,8 @@ class MainWindow(QMainWindow):
             f"Comparación guardada: {identificador}"
         )
 
+        self._actualizar_estado_db(ruta)
+
     def _actualizar_identificadores_historico(self, cambios):
         combo = self.ui.comboBoxIdentificadorHistorico
 
@@ -1248,6 +1341,8 @@ class MainWindow(QMainWindow):
             self.ui.statusBar.showMessage(
                 "Histórico cargado correctamente."
             )
+
+            self._actualizar_estado_db(ruta)
 
         except Exception as error:
 
