@@ -263,7 +263,7 @@ class MainWindow(QMainWindow):
         """
 
         # Icono de ventana
-        ruta_icono = Path("images/pine_logo.ico")
+        ruta_icono = Path("images/pine logo.png")
         if ruta_icono.exists():
             self.setWindowIcon(QIcon(str(ruta_icono)))
 
@@ -280,6 +280,7 @@ class MainWindow(QMainWindow):
 
         iconos = [
             "fa5s.balance-scale",
+            "fa5s.layer-group",
             "fa5s.poll",
             "fa5s.history",
             "fa5s.question-circle",
@@ -311,6 +312,13 @@ class MainWindow(QMainWindow):
             self.ui.pushButtonAbrirHistorico.setIcon(qta.icon("fa5s.folder-open", color="#FFFFFF"))
             self.ui.pushButtonEliminarComparacion.setIcon(qta.icon("fa5s.trash-alt", color="#FFFFFF"))
             self.ui.pushButtonExportarHistorico.setIcon(qta.icon("fa5s.file-export", color="#FFFFFF"))
+
+            # Botones de comparación múltiple
+            self.ui.pushButtonAgregarArchivosMultiples.setIcon(qta.icon("fa5s.file-medical", color="#FFFFFF"))
+            self.ui.pushButtonQuitarArchivoMultiple.setIcon(qta.icon("fa5s.minus-circle", color="#FFFFFF"))
+            self.ui.pushButtonSubirArchivoMultiple.setIcon(qta.icon("fa5s.arrow-up", color="#FFFFFF"))
+            self.ui.pushButtonBajarArchivoMultiple.setIcon(qta.icon("fa5s.arrow-down", color="#FFFFFF"))
+            self.ui.pushButtonCompararMultiple.setIcon(qta.icon("fa5s.cogs", color="#FFFFFF"))
 
         except Exception:
             pass
@@ -374,6 +382,45 @@ class MainWindow(QMainWindow):
 
         self.ui.pushButtonExportarHistorico.clicked.connect(
             self.exportar_historico_excel
+        )
+
+        # Eventos comparación múltiple
+        self.ui.pushButtonAgregarArchivosMultiples.clicked.connect(
+            self.agregar_archivos_multiples
+        )
+
+        self.ui.pushButtonQuitarArchivoMultiple.clicked.connect(
+            self.quitar_archivo_multiple
+        )
+
+        self.ui.pushButtonSubirArchivoMultiple.clicked.connect(
+            self.subir_archivo_multiple
+        )
+
+        self.ui.pushButtonBajarArchivoMultiple.clicked.connect(
+            self.bajar_archivo_multiple
+        )
+
+        self.ui.comboBoxHojaMultiple.currentTextChanged.connect(
+            self.cargar_hoja_multiple
+        )
+
+        self.ui.lineEditBuscarClaveMultiple.textChanged.connect(
+            lambda texto: self._filtrar_lista(
+                self.ui.listaColumnasClaveMultiple,
+                texto,
+            )
+        )
+
+        self.ui.lineEditBuscarCompararMultiple.textChanged.connect(
+            lambda texto: self._filtrar_lista(
+                self.ui.listaColumnasCompararMultiple,
+                texto,
+            )
+        )
+
+        self.ui.pushButtonCompararMultiple.clicked.connect(
+            self.procesar_comparacion_multiple
         )
 
     def _filtrar_lista(
@@ -1836,3 +1883,317 @@ class MainWindow(QMainWindow):
         self.ui.textEditValor1Historico.clear()
         self.ui.textEditValor2Historico.clear()
 
+    # =========================================================
+    # LÓGICA DE COMPARACIÓN MÚLTIPLE / LOTE
+    # =========================================================
+
+    def agregar_archivos_multiples(self):
+        """
+        Añade múltiples archivos Excel a la lista secuencial.
+        """
+
+        rutas, _ = QFileDialog.getOpenFileNames(
+            self,
+            "Seleccionar archivos Excel para comparación múltiple",
+            "",
+            "Archivos Excel (*.xlsx *.xls)",
+        )
+
+        if not rutas:
+            return
+
+        lista = self.ui.listaArchivosMultiples
+
+        # Obtener rutas ya existentes
+        rutas_existentes = {
+            lista.item(i).text() for i in range(lista.count())
+        }
+
+        nuevas_rutas = [r for r in rutas if r not in rutas_existentes]
+
+        # Ordenar alfabéticamente las nuevas rutas
+        nuevas_rutas.sort()
+
+        for ruta in nuevas_rutas:
+            lista.addItem(ruta)
+
+        self._actualizar_hojas_multiples()
+
+    def quitar_archivo_multiple(self):
+        """
+        Elimina el archivo seleccionado de la lista múltiple.
+        """
+
+        lista = self.ui.listaArchivosMultiples
+        fila = lista.currentRow()
+
+        if fila >= 0:
+            lista.takeItem(fila)
+            self._actualizar_hojas_multiples()
+
+    def subir_archivo_multiple(self):
+        """
+        Sube una posición el archivo seleccionado.
+        """
+
+        lista = self.ui.listaArchivosMultiples
+        fila = lista.currentRow()
+
+        if fila > 0:
+            item = lista.takeItem(fila)
+            lista.insertItem(fila - 1, item)
+            lista.setCurrentRow(fila - 1)
+
+    def bajar_archivo_multiple(self):
+        """
+        Baja una posición el archivo seleccionado.
+        """
+
+        lista = self.ui.listaArchivosMultiples
+        fila = lista.currentRow()
+
+        if 0 <= fila < lista.count() - 1:
+            item = lista.takeItem(fila)
+            lista.insertItem(fila + 1, item)
+            lista.setCurrentRow(fila + 1)
+
+    def _obtener_rutas_multiples(self) -> list[str]:
+        """
+        Devuelve la lista de rutas ordenadas según la UI.
+        """
+        lista = self.ui.listaArchivosMultiples
+        return [lista.item(i).text() for i in range(lista.count())]
+
+    def _actualizar_hojas_multiples(self):
+        """
+        Obtiene las hojas comunes presentes en TODOS los Excel seleccionados.
+        """
+
+        lista = self.ui.listaArchivosMultiples
+        combo = self.ui.comboBoxHojaMultiple
+
+        combo.blockSignals(True)
+        combo.clear()
+
+        rutas = [lista.item(i).text() for i in range(lista.count())]
+
+        if not rutas:
+            combo.blockSignals(False)
+
+            self.ui.listaColumnasClaveMultiple.clear()
+            self.ui.listaColumnasCompararMultiple.clear()
+
+            return
+
+        try:
+            hojas_comunes = None
+
+            for ruta in rutas:
+                hojas = set(obtener_hojas(ruta))
+                if hojas_comunes is None:
+                    hojas_comunes = hojas
+                else:
+                    hojas_comunes &= hojas
+
+            lista_hojas = sorted(list(hojas_comunes or []))
+            combo.addItems(lista_hojas)
+            combo.blockSignals(False)
+
+            if lista_hojas:
+                self.cargar_hoja_multiple(combo.currentText())
+            else:
+                self.ui.listaColumnasClaveMultiple.clear()
+                self.ui.listaColumnasCompararMultiple.clear()
+
+        except Exception as error:
+            combo.blockSignals(False)
+            QMessageBox.critical(
+                self,
+                "Error al leer hojas comunes",
+                f"Ocurrió un error al inspeccionar las hojas:\n\n{error}",
+            )
+
+    def cargar_hoja_multiple(self, nombre_hoja: str):
+        """
+        Carga las columnas comunes a todos los Excel para la hoja dada.
+        """
+
+        lista = self.ui.listaArchivosMultiples
+        rutas = [lista.item(i).text() for i in range(lista.count())]
+
+        if not rutas or not nombre_hoja:
+            self.ui.listaColumnasClaveMultiple.clear()
+            self.ui.listaColumnasCompararMultiple.clear()
+
+            return
+
+        try:
+            columnas_comunes = None
+
+            for ruta in rutas:
+                df = leer_excel(ruta, nombre_hoja)
+                cols = set(df.columns)
+                if columnas_comunes is None:
+                    columnas_comunes = cols
+                else:
+                    columnas_comunes &= cols
+
+            columnas = sorted(list(columnas_comunes or []))
+
+            self.ui.listaColumnasClaveMultiple.clear()
+            self.ui.listaColumnasCompararMultiple.clear()
+
+            self.ui.listaColumnasClaveMultiple.addItems(columnas)
+            self.ui.listaColumnasCompararMultiple.addItems(columnas)
+
+        except Exception as error:
+            QMessageBox.critical(
+                self,
+                "Error al leer columnas",
+                f"No se pudieron leer las columnas de los archivos:\n\n{error}",
+            )
+
+    def procesar_comparacion_multiple(self):
+        """
+        Ejecuta la comparación secuencial de N archivos (1 → 2 → 3 ...)
+        y guarda los resultados directamente en una base de datos SQLite.
+        """
+
+        lista = self.ui.listaArchivosMultiples
+        rutas = [lista.item(i).text() for i in range(lista.count())]
+
+        if len(rutas) < 2:
+            QMessageBox.warning(
+                self,
+                "Faltan archivos",
+                "Debes agregar al menos 2 archivos Excel para comparar.",
+            )
+
+            return
+
+        nombre_hoja = self.ui.comboBoxHojaMultiple.currentText()
+
+        if not nombre_hoja:
+            QMessageBox.warning(
+                self,
+                "Falta la hoja",
+                "Selecciona una hoja válida para comparar.",
+            )
+
+            return
+
+        columnas_clave = [
+            item.text()
+            for item in self.ui.listaColumnasClaveMultiple.selectedItems()
+        ]
+
+        columnas_comparar = [
+            item.text()
+            for item in self.ui.listaColumnasCompararMultiple.selectedItems()
+        ]
+
+        if not columnas_clave:
+            QMessageBox.warning(
+                self,
+                "Falta la clave",
+                "Selecciona al menos una columna clave.",
+            )
+
+            return
+
+        if not columnas_comparar:
+            QMessageBox.warning(
+                self,
+                "Faltan columnas",
+                "Selecciona al menos una columna a comparar.",
+            )
+
+            return
+
+        # Pedir destino SQLite
+        nombre_bd = obtener_nombre_bd(rutas[0], rutas[-1])
+        ruta_bd, _ = QFileDialog.getSaveFileName(
+            self,
+            "Crear base de datos SQLite para Histórico Múltiple",
+            nombre_bd,
+            "Base de datos SQLite (*.sqlite *.db)",
+        )
+
+        if not ruta_bd:
+            return
+
+        try:
+            from src.excel.comparador import comparar_dataframes
+
+            repositorio = RepositorioSQLite(ruta_bd)
+            total_cambios = 0
+
+            # Cargar primer dataframe
+            df_anterior = leer_excel(rutas[0], nombre_hoja)
+
+            for i in range(len(rutas) - 1):
+                ruta_anterior = rutas[i]
+                ruta_nueva = rutas[i + 1]
+
+                df_nuevo = leer_excel(ruta_nueva, nombre_hoja)
+
+                identificador = obtener_identificador_propuesto(
+                    ruta_anterior,
+                    ruta_nueva,
+                )
+
+                cambios = comparar_dataframes(
+                    df_anterior,
+                    df_nuevo,
+                    columnas_clave=columnas_clave,
+                    columnas_comparar=columnas_comparar,
+                )
+
+                repositorio.guardar_comparacion(
+                    identificador=identificador,
+                    archivo_anterior=ruta_anterior,
+                    archivo_nuevo=ruta_nueva,
+                    hoja_anterior=nombre_hoja,
+                    hoja_nueva=nombre_hoja,
+                    columnas_clave=columnas_clave,
+                    columnas_comparadas=columnas_comparar,
+                    cambios=cambios,
+                )
+
+                total_cambios += len(cambios)
+                df_anterior = df_nuevo
+
+            QMessageBox.information(
+                self,
+                "Comparación múltiple completada",
+                (
+                    "Se han procesado secuencialmente todos los archivos "
+                    f"({len(rutas)} archivos, {len(rutas) - 1} comparaciones).\n\n"
+                    f"Cambios totales guardados: {total_cambios}\n\n"
+                    f"Base de datos:\n{ruta_bd}"
+                ),
+            )
+
+            # Cargar inmediatamente en el Histórico
+            self.ui.lineEditBaseHistorico.setText(ruta_bd)
+            self.ruta_historico = ruta_bd
+            self.repositorio_historico = repositorio
+
+            cambios_historico = repositorio.obtener_historico_cambios()
+            self._actualizar_identificadores_historico(cambios_historico)
+            self.modelo_historico.actualizar(cambios_historico)
+            self.limpiar_detalle_historico()
+
+            self.ui.tabWidget.setCurrentWidget(self.ui.tab_historico)
+            self._actualizar_estado_db(ruta_bd)
+
+            self.ui.statusBar.showMessage(
+                f"Procesados {len(rutas)} archivos secuencialmente."
+            )
+
+        except Exception as error:
+            QMessageBox.critical(
+                self,
+                "Error en comparación múltiple",
+                f"No se pudo completar el procesamiento:\n\n{error}",
+            )

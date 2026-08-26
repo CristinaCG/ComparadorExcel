@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>807</width>
-    <height>737</height>
+    <width>850</width>
+    <height>750</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -34,7 +34,7 @@
       </property>
       <widget class="QWidget" name="tab_comparar">
        <attribute name="title">
-        <string>Comparar</string>
+        <string>Comparación individual</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
@@ -150,7 +150,7 @@
                 <item>
                  <widget class="QListWidget" name="listaColumnasClave">
                   <property name="selectionMode">
-                   <enum>QAbstractItemView::NoSelection</enum>
+                 <enum>QAbstractItemView::ExtendedSelection</enum>
                   </property>
                  </widget>
                 </item>
@@ -177,7 +177,7 @@
                 <item>
                  <widget class="QListWidget" name="listaColumnasComparar">
                   <property name="selectionMode">
-                   <enum>QAbstractItemView::NoSelection</enum>
+                 <enum>QAbstractItemView::ExtendedSelection</enum>
                   </property>
                  </widget>
                 </item>
@@ -193,6 +193,133 @@
          <widget class="QPushButton" name="pushButtonComparar">
           <property name="text">
            <string>Comparar archivos</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_comparacion_multiple">
+       <attribute name="title">
+        <string>Comparación múltiple</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_multiple">
+        <item>
+         <widget class="QGroupBox" name="groupBoxArchivosMultiples">
+          <property name="title">
+           <string>Archivos Excel (se compararán en secuencia: 1 → 2 → 3 ...)</string>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_multiple_files">
+           <item>
+            <widget class="QListWidget" name="listaArchivosMultiples"/>
+           </item>
+           <item>
+            <layout class="QVBoxLayout" name="verticalLayout_botones_multiple">
+             <item>
+              <widget class="QPushButton" name="pushButtonAgregarArchivosMultiples">
+               <property name="text">
+                <string>Agregar archivos</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="pushButtonQuitarArchivoMultiple">
+               <property name="text">
+                <string>Quitar seleccionado</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="pushButtonSubirArchivoMultiple">
+               <property name="text">
+                <string>Subir ⬆</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="pushButtonBajarArchivoMultiple">
+               <property name="text">
+                <string>Bajar ⬇</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_hoja_multiple">
+          <item>
+           <widget class="QLabel" name="labelHojaMultiple">
+            <property name="text">
+             <string>Hoja a comparar (común a todos):</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="comboBoxHojaMultiple"/>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="groupBoxConfiguracionMultiple">
+          <property name="title">
+           <string>Configuración de comparación en lote</string>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_config_multiple">
+           <item>
+            <widget class="QGroupBox" name="groupBoxClaveMultiple">
+             <property name="title">
+              <string>Columnas clave</string>
+             </property>
+             <layout class="QVBoxLayout" name="verticalLayout_clave_multiple">
+              <item>
+               <widget class="QLineEdit" name="lineEditBuscarClaveMultiple">
+                <property name="placeholderText">
+                 <string>Buscar columna...</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QListWidget" name="listaColumnasClaveMultiple">
+                <property name="selectionMode">
+                 <enum>QAbstractItemView::ExtendedSelection</enum>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QGroupBox" name="groupBoxCompararMultiple">
+             <property name="title">
+              <string>Columnas a comparar</string>
+             </property>
+             <layout class="QVBoxLayout" name="verticalLayout_comparar_multiple">
+              <item>
+               <widget class="QLineEdit" name="lineEditBuscarCompararMultiple">
+                <property name="placeholderText">
+                 <string>Buscar columna...</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QListWidget" name="listaColumnasCompararMultiple">
+                <property name="selectionMode">
+                 <enum>QAbstractItemView::ExtendedSelection</enum>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButtonCompararMultiple">
+          <property name="text">
+           <string>Procesar secuencialmente y crear histórico</string>
           </property>
          </widget>
         </item>
