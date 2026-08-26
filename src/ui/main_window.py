@@ -24,9 +24,6 @@ from PySide6.QtWidgets import (
     QComboBox,
     QApplication,
     QHeaderView,
-    QWidget,
-    QVBoxLayout,
-    QTextBrowser,
 )
 
 from src.ui.themes import TEMAS
@@ -134,7 +131,7 @@ class MainWindow(QMainWindow):
 
         self._inicializar_interfaz()
 
-        self._crear_pestana_ayuda()
+        self._configurar_contenido_ayuda()
 
         self._configurar_statusbar_y_temas()
 
@@ -145,16 +142,11 @@ class MainWindow(QMainWindow):
         self.ui.tabWidget.currentChanged.connect(self._actualizar_iconos_pestanas)
         self._actualizar_iconos_pestanas(self.ui.tabWidget.currentIndex())
 
-    def _crear_pestana_ayuda(self):
+    def _configurar_contenido_ayuda(self):
         """
-        Crea la pestaña de 'Ayuda y Contacto' en la interfaz.
+        Configura el texto explicativo y de contacto en el QTextBrowser
+        de la pestaña 'Ayuda'.
         """
-
-        tab_ayuda = QWidget()
-        layout = QVBoxLayout(tab_ayuda)
-
-        text_browser = QTextBrowser()
-        text_browser.setOpenExternalLinks(True)
 
         html_contenido = """
         <div style="font-family: 'Segoe UI', sans-serif; padding: 10px;">
@@ -189,10 +181,7 @@ class MainWindow(QMainWindow):
         </div>
         """
 
-        text_browser.setHtml(html_contenido)
-        layout.addWidget(text_browser)
-
-        self.ui.tabWidget.addTab(tab_ayuda, "Ayuda")
+        self.ui.textBrowserAyuda.setHtml(html_contenido)
 
     # =========================================================
     # INICIALIZACIÓN

@@ -30,7 +30,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab_comparar">
        <attribute name="title">
@@ -482,6 +482,20 @@
          <widget class="QPushButton" name="pushButtonExportarHistorico">
           <property name="text">
            <string>Exportar a Excel</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_ayuda">
+       <attribute name="title">
+        <string>Ayuda</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_ayuda">
+        <item>
+         <widget class="QTextBrowser" name="textBrowserAyuda">
+          <property name="openExternalLinks">
+           <bool>true</bool>
           </property>
          </widget>
         </item>

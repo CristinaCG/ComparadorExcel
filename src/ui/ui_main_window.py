@@ -19,7 +19,8 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QComboBox, QGrid
     QGroupBox, QHBoxLayout, QHeaderView, QLabel,
     QLineEdit, QListWidget, QListWidgetItem, QMainWindow,
     QPushButton, QSizePolicy, QStatusBar, QTabWidget,
-    QTableView, QTextEdit, QVBoxLayout, QWidget)
+    QTableView, QTextBrowser, QTextEdit, QVBoxLayout,
+    QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -409,6 +410,17 @@ class Ui_MainWindow(object):
         self.verticalLayout_8.addWidget(self.pushButtonExportarHistorico)
 
         self.tabWidget.addTab(self.tab_historico, "")
+        self.tab_ayuda = QWidget()
+        self.tab_ayuda.setObjectName(u"tab_ayuda")
+        self.verticalLayout_ayuda = QVBoxLayout(self.tab_ayuda)
+        self.verticalLayout_ayuda.setObjectName(u"verticalLayout_ayuda")
+        self.textBrowserAyuda = QTextBrowser(self.tab_ayuda)
+        self.textBrowserAyuda.setObjectName(u"textBrowserAyuda")
+        self.textBrowserAyuda.setOpenExternalLinks(True)
+
+        self.verticalLayout_ayuda.addWidget(self.textBrowserAyuda)
+
+        self.tabWidget.addTab(self.tab_ayuda, "")
 
         self.horizontalLayout_10.addWidget(self.tabWidget)
 
@@ -419,7 +431,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
 
-        self.tabWidget.setCurrentIndex(2)
+        self.tabWidget.setCurrentIndex(0)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
@@ -458,5 +470,6 @@ class Ui_MainWindow(object):
         self.labelValor2Historico.setText(QCoreApplication.translate("MainWindow", u"Valor 2", None))
         self.pushButtonExportarHistorico.setText(QCoreApplication.translate("MainWindow", u"Exportar a Excel", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_historico), QCoreApplication.translate("MainWindow", u"Hist\u00f3rico", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_ayuda), QCoreApplication.translate("MainWindow", u"Ayuda", None))
     # retranslateUi
 
