@@ -24,6 +24,9 @@ from PySide6.QtWidgets import (
     QComboBox,
     QApplication,
     QHeaderView,
+    QWidget,
+    QVBoxLayout,
+    QTextBrowser,
 )
 
 from src.ui.themes import TEMAS
@@ -131,11 +134,65 @@ class MainWindow(QMainWindow):
 
         self._inicializar_interfaz()
 
+        self._crear_pestana_ayuda()
+
         self._configurar_statusbar_y_temas()
 
         self._configurar_iconos()
 
         self._configurar_ventana_y_tablas()
+
+        self.ui.tabWidget.currentChanged.connect(self._actualizar_iconos_pestanas)
+        self._actualizar_iconos_pestanas(self.ui.tabWidget.currentIndex())
+
+    def _crear_pestana_ayuda(self):
+        """
+        Crea la pestaña de 'Ayuda y Contacto' en la interfaz.
+        """
+
+        tab_ayuda = QWidget()
+        layout = QVBoxLayout(tab_ayuda)
+
+        text_browser = QTextBrowser()
+        text_browser.setOpenExternalLinks(True)
+
+        html_contenido = """
+        <div style="font-family: 'Segoe UI', sans-serif; padding: 10px;">
+            <h2 style="color: #106EBE; margin-bottom: 5px;">📘 Guía de Uso del Comparador de Excel</h2>
+            <p>Bienvenido al <b>Comparador de Excel</b>. Esta herramienta te permite comparar versiones de archivos Excel (como listas de cables F110) y llevar un registro organizado de los cambios.</p>
+
+            <hr style="border: 0; height: 1px; background: #DCE3EC; margin: 15px 0;">
+
+            <h3 style="color: #0F4C81;">🚀 Pasos para Realizar una Comparación</h3>
+            <ol style="line-height: 1.6;">
+                <li><b>Pestaña "Comparar":</b> Selecciona el <b>Excel 1</b> (versión anterior) y el <b>Excel 2</b> (versión nueva) usando los botones "Seleccionar".</li>
+                <li><b>Hojas de cálculo:</b> Selecciona la hoja correspondiente para cada archivo.</li>
+                <li><b>Columnas clave:</b> Marca las columnas que identifican únicamente cada registro (por ejemplo: <i>Código, ID de Cable, Tag</i>).</li>
+                <li><b>Columnas a comparar:</b> Selecciona las columnas cuyos valores deseas inspeccionar en búsqueda de diferencias.</li>
+                <li><b>Comparar:</b> Haz clic en el botón <b>"Comparar archivos"</b> para ver los resultados automáticamente.</li>
+            </ol>
+
+            <h3 style="color: #0F4C81;">💾 Guardar e Histórico</h3>
+            <ul style="line-height: 1.6;">
+                <li>En la pestaña <b>"Resultados"</b>, haz clic en <b>"Guardar comparación"</b> para almacenar los cambios detectados en una base de datos SQLite.</li>
+                <li>En la pestaña <b>"Histórico"</b>, puedes abrir una base de datos SQLite guardada para consultar comparaciones anteriores o exportar el histórico completo a Excel.</li>
+            </ul>
+
+            <hr style="border: 0; height: 1px; background: #DCE3EC; margin: 15px 0;">
+
+            <h3 style="color: #106EBE;">✉️ Soporte y Contacto</h3>
+            <p>Si tienes alguna sugerencia, duda o necesitas ayuda con la aplicación, ponte en contacto con:</p>
+            <div style="background-color: #EBF0F5; border-left: 4px solid #106EBE; padding: 12px; border-radius: 4px; margin-top: 10px;">
+                <b>Cristina Caravaca</b><br>
+                Correo electrónico: <a href="mailto:cristina.caravaca@pine.zimacorp.es" style="color: #106EBE; font-weight: bold;">cristina.caravaca@pine.zimacorp.es</a>
+            </div>
+        </div>
+        """
+
+        text_browser.setHtml(html_contenido)
+        layout.addWidget(text_browser)
+
+        self.ui.tabWidget.addTab(tab_ayuda, "Ayuda")
 
     # =========================================================
     # INICIALIZACIÓN
@@ -225,16 +282,37 @@ class MainWindow(QMainWindow):
         for tabla in (self.ui.tableViewCambios, self.ui.tableViewHistorico):
             tabla.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
 
+    def _actualizar_iconos_pestanas(self, indice_activo: int = 0):
+        """
+        Actualiza el color de los iconos de las pestañas:
+        - Blanco (#FFFFFF) para la pestaña seleccionada
+        - Azul/Acento (#106EBE) para las pestañas no seleccionadas
+        """
+
+        iconos = [
+            "fa5s.balance-scale",
+            "fa5s.poll",
+            "fa5s.history",
+            "fa5s.question-circle",
+        ]
+
+        try:
+            for i, nombre_icono in enumerate(iconos):
+                if i >= self.ui.tabWidget.count():
+                    break
+
+                color = "#FFFFFF" if i == indice_activo else "#106EBE"
+                self.ui.tabWidget.setTabIcon(i, qta.icon(nombre_icono, color=color))
+        except Exception:
+            pass
+
     def _configurar_iconos(self):
         """
         Asigna iconos a los elementos de la interfaz usando QtAwesome.
         """
 
         try:
-            # Iconos para pestañas
-            self.ui.tabWidget.setTabIcon(0, qta.icon("fa5s.balance-scale", color="#106EBE"))
-            self.ui.tabWidget.setTabIcon(1, qta.icon("fa5s.poll", color="#106EBE"))
-            self.ui.tabWidget.setTabIcon(2, qta.icon("fa5s.history", color="#106EBE"))
+            self._actualizar_iconos_pestanas(self.ui.tabWidget.currentIndex())
 
             # Iconos en blanco para los botones principales
             self.ui.pushButtonArchivo1.setIcon(qta.icon("fa5s.file-excel", color="#FFFFFF"))
