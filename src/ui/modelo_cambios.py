@@ -6,35 +6,36 @@ from PySide6.QtCore import (
 
 from PySide6.QtGui import (
     QColor,
-    QPalette,
 )
 
 from PySide6.QtWidgets import QApplication
 
+_ES_TEMA_OSCURO_CACHE = None
+
+
+def invalidar_cache_tema():
+    global _ES_TEMA_OSCURO_CACHE
+    _ES_TEMA_OSCURO_CACHE = None
+
 
 def _es_tema_oscuro() -> bool:
-    """
-    Comprueba si el estilo QSS actual corresponde al tema oscuro.
-    """
+    global _ES_TEMA_OSCURO_CACHE
+
+    if _ES_TEMA_OSCURO_CACHE is not None:
+        return _ES_TEMA_OSCURO_CACHE
 
     app = QApplication.instance()
 
     if app and hasattr(app, "styleSheet"):
         qss = app.styleSheet()
+        _ES_TEMA_OSCURO_CACHE = "#0F172A" in qss
 
-        # #0F172A es el color de fondo distintivo de Pine Oscuro
-        if "#0F172A" in qss:
-            return True
+        return _ES_TEMA_OSCURO_CACHE
 
     return False
 
 
 def _obtener_colores_cambio(tipo: str):
-    """
-    Devuelve la pareja (fondo, texto) con contraste adecuado
-    según el tipo de cambio y si el tema es oscuro o claro.
-    """
-
     if _es_tema_oscuro():
         if tipo == "NUEVO":
             return QColor(20, 60, 30), QColor(140, 230, 160)
@@ -109,13 +110,14 @@ class ModeloCambios(QAbstractTableModel):
         # ESTILOS DE COLOR DE FONDO Y TEXTO
         # =========================================================
 
-        fondo, texto = _obtener_colores_cambio(cambio.tipo)
+        if role in (Qt.ItemDataRole.BackgroundRole, Qt.ItemDataRole.ForegroundRole):
+            fondo, texto = _obtener_colores_cambio(cambio.tipo)
 
-        if role == Qt.ItemDataRole.BackgroundRole:
-            return fondo
+            if role == Qt.ItemDataRole.BackgroundRole:
+                return fondo
 
-        if role == Qt.ItemDataRole.ForegroundRole:
-            return texto
+            if role == Qt.ItemDataRole.ForegroundRole:
+                return texto
 
         return None
 
@@ -150,10 +152,6 @@ class ModeloCambios(QAbstractTableModel):
         self,
         fila: int,
     ):
-        """
-        Devuelve el objeto Cambio correspondiente
-        a una fila del modelo.
-        """
 
         if fila < 0 or fila >= len(self.cambios):
             return None

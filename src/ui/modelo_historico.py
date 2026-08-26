@@ -6,51 +6,9 @@ from PySide6.QtCore import (
 
 from PySide6.QtGui import (
     QColor,
-    QPalette,
 )
 
-from PySide6.QtWidgets import QApplication
-
-
-def _es_tema_oscuro() -> bool:
-    """
-    Comprueba si el estilo QSS actual corresponde al tema oscuro.
-    """
-
-    app = QApplication.instance()
-
-    if app and hasattr(app, "styleSheet"):
-        qss = app.styleSheet()
-
-        # #0F172A es el color de fondo distintivo de Pine Oscuro
-        if "#0F172A" in qss:
-            return True
-
-    return False
-
-
-def _obtener_colores_cambio(tipo: str):
-    """
-    Devuelve la pareja (fondo, texto) con contraste adecuado
-    según el tipo de cambio y si el tema es oscuro o claro.
-    """
-
-    if _es_tema_oscuro():
-        if tipo == "NUEVO":
-            return QColor(20, 60, 30), QColor(140, 230, 160)
-        if tipo == "ELIMINADO":
-            return QColor(70, 25, 25), QColor(255, 160, 160)
-        if tipo == "MODIFICADO":
-            return QColor(65, 50, 15), QColor(255, 220, 130)
-    else:
-        if tipo == "NUEVO":
-            return QColor("#C3FAC4"), QColor("#1A2530")
-        if tipo == "ELIMINADO":
-            return QColor("#FF746C"), QColor("#FFFFFF")
-        if tipo == "MODIFICADO":
-            return QColor("#FFEE8C"), QColor("#1A2530")
-
-    return None, None
+from src.ui.modelo_cambios import _obtener_colores_cambio
 
 
 class ModeloHistorico(QAbstractTableModel):
@@ -118,13 +76,14 @@ class ModeloHistorico(QAbstractTableModel):
         # ESTILOS DE COLOR DE FONDO Y TEXTO
         # =========================================================
 
-        fondo, texto = _obtener_colores_cambio(cambio["tipo"])
+        if role in (Qt.ItemDataRole.BackgroundRole, Qt.ItemDataRole.ForegroundRole):
+            fondo, texto = _obtener_colores_cambio(cambio["tipo"])
 
-        if role == Qt.ItemDataRole.BackgroundRole:
-            return fondo
+            if role == Qt.ItemDataRole.BackgroundRole:
+                return fondo
 
-        if role == Qt.ItemDataRole.ForegroundRole:
-            return texto
+            if role == Qt.ItemDataRole.ForegroundRole:
+                return texto
 
         return None
 

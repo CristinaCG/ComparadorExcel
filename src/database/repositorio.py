@@ -65,10 +65,7 @@ class RepositorioSQLite:
         self.inicializar()
 
         with conectar(self.ruta) as conexion:
-
-            # =========================================================
-            # COMPROBAR SI YA EXISTE EL IDENTIFICADOR
-            # =========================================================
+            conexion.execute("BEGIN TRANSACTION")
 
             comparacion_existente = conexion.execute(
                 """
@@ -80,12 +77,7 @@ class RepositorioSQLite:
                 (identificador,),
             ).fetchone()
 
-            # =========================================================
-            # SI NO EXISTE, CREAR LA COMPARACIÓN
-            # =========================================================
-
             if comparacion_existente is None:
-
                 cursor = conexion.execute(
                     """
                     INSERT INTO comparaciones (
@@ -115,47 +107,45 @@ class RepositorioSQLite:
                         ),
                     ),
                 )
-
                 comparacion_id = cursor.lastrowid
-
-            # =========================================================
-            # SI YA EXISTE, UTILIZAR ESA COMPARACIÓN
-            # =========================================================
-
             else:
-
                 comparacion_id = comparacion_existente["id"]
 
-            # =========================================================
-            # INSERTAR SOLO CAMBIOS QUE NO EXISTAN
-            # =========================================================
-
-            for cambio in cambios:
-
-                existe = conexion.execute(
+            # Obtener claves existentes para esta comparación en un único query
+            cambios_existentes = set(
+                conexion.execute(
                     """
-                    SELECT 1
+                    SELECT clave, tipo, COALESCE(columna, '')
                     FROM cambios
                     WHERE comparacion_id = ?
-                    AND clave = ?
-                    AND tipo = ?
-                    AND columna = ?
-                    LIMIT 1
                     """,
+                    (comparacion_id,),
+                ).fetchall()
+            )
+
+            registros_insertar = []
+
+            for cambio in cambios:
+                col_val = cambio.columna if cambio.columna is not None else ""
+                tupla_clave = (cambio.clave, cambio.tipo, col_val)
+
+                if tupla_clave in cambios_existentes:
+                    continue
+
+                cambios_existentes.add(tupla_clave)
+                registros_insertar.append(
                     (
                         comparacion_id,
                         cambio.clave,
                         cambio.tipo,
                         cambio.columna,
-                    ),
-                ).fetchone()
+                        _convertir_valor(cambio.valor_1),
+                        _convertir_valor(cambio.valor_2),
+                    )
+                )
 
-                # Ya existe → no hacemos nada
-                if existe is not None:
-                    continue
-
-                # No existe → insertar
-                conexion.execute(
+            if registros_insertar:
+                conexion.executemany(
                     """
                     INSERT INTO cambios (
                         comparacion_id,
@@ -167,15 +157,10 @@ class RepositorioSQLite:
                     )
                     VALUES (?, ?, ?, ?, ?, ?)
                     """,
-                    (
-                        comparacion_id,
-                        cambio.clave,
-                        cambio.tipo,
-                        cambio.columna,
-                        _convertir_valor(cambio.valor_1),
-                        _convertir_valor(cambio.valor_2),
-                    ),
+                    registros_insertar,
                 )
+
+            conexion.commit()
 
             return comparacion_id
 

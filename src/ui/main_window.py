@@ -24,9 +24,13 @@ from PySide6.QtWidgets import (
     QComboBox,
     QApplication,
     QHeaderView,
+    QProgressDialog,
 )
 
+from PySide6.QtCore import QThread, Signal
+
 from src.ui.themes import TEMAS
+from src.ui.modelo_cambios import invalidar_cache_tema
 
 from src.database.repositorio import RepositorioSQLite
 
@@ -155,13 +159,21 @@ class MainWindow(QMainWindow):
 
             <hr style="border: 0; height: 1px; background: #DCE3EC; margin: 15px 0;">
 
-            <h3 style="color: #0F4C81;">🚀 Pasos para Realizar una Comparación</h3>
+            <h3 style="color: #0F4C81;">🚀 Comparación Individual (2 archivos)</h3>
             <ol style="line-height: 1.6;">
-                <li><b>Pestaña "Comparar":</b> Selecciona el <b>Excel 1</b> (versión anterior) y el <b>Excel 2</b> (versión nueva) usando los botones "Seleccionar".</li>
+                <li><b>Pestaña "Comparación individual":</b> Selecciona el <b>Excel 1</b> (versión anterior) y el <b>Excel 2</b> (versión nueva).</li>
                 <li><b>Hojas de cálculo:</b> Selecciona la hoja correspondiente para cada archivo.</li>
                 <li><b>Columnas clave:</b> Marca las columnas que identifican únicamente cada registro (por ejemplo: <i>Código, ID de Cable, Tag</i>).</li>
                 <li><b>Columnas a comparar:</b> Selecciona las columnas cuyos valores deseas inspeccionar en búsqueda de diferencias.</li>
-                <li><b>Comparar:</b> Haz clic en el botón <b>"Comparar archivos"</b> para ver los resultados automáticamente.</li>
+                <li><b>Comparar:</b> Haz clic en <b>"Comparar archivos"</b> para ver los resultados inmediatamente.</li>
+            </ol>
+
+            <h3 style="color: #0F4C81;">📦 Comparación Múltiple / Lote (Secuencial)</h3>
+            <ol style="line-height: 1.6;">
+                <li><b>Pestaña "Comparación múltiple":</b> Haz clic en <b>"Agregar archivos"</b> para cargar un grupo de archivos Excel organizados cronológicamente o por versiones.</li>
+                <li><b>Reordenar secuencia:</b> Usa los botones ⬆/⬇ para asegurarte de que estén en el orden correcto (ej. <i>Versión 1 → Versión 2 → Versión 3</i>).</li>
+                <li><b>Configuración común:</b> Selecciona la hoja común a comparar, las columnas clave y las columnas a evaluar.</li>
+                <li><b>Procesar:</b> Haz clic en <b>"Procesar secuencialmente y crear histórico"</b> para generar automáticamente la base de datos de histórico con todas las comparaciones por parejas.</li>
             </ol>
 
             <h3 style="color: #0F4C81;">💾 Guardar e Histórico</h3>
@@ -239,6 +251,8 @@ class MainWindow(QMainWindow):
             app = QApplication.instance()
             if app:
                 app.setStyleSheet(TEMAS[nombre_tema])
+
+            invalidar_cache_tema()
 
             self.repositorio_configuracion.guardar_preferencia(
                 "tema",
@@ -1106,49 +1120,59 @@ class MainWindow(QMainWindow):
             return
 
         # ---------------------------------------------------------
-        # Ejecutar comparación
+        # Ejecutar comparación en segundo plano con diálogo de progreso
         # ---------------------------------------------------------
 
-        try:
+        from src.excel.comparador import comparar_dataframes
 
-            from src.excel.comparador import comparar_dataframes
+        dialogo = QProgressDialog("Comparando archivos...", None, 0, 0, self)
+        dialogo.setWindowTitle("Procesando")
+        dialogo.setCancelButton(None)
+        dialogo.setModal(True)
+        dialogo.show()
 
-            cambios = comparar_dataframes(
-                self.df_1,
-                self.df_2,
-                columnas_clave=columnas_clave,
-                columnas_comparar=columnas_comparar,
-            )
+        class WorkerComparar(QThread):
+            terminado = Signal(object, object)
 
-        except Exception as error:
+            def __init__(self, df1, df2, claves, comparar):
+                super().__init__()
+                self.df1 = df1
+                self.df2 = df2
+                self.claves = claves
+                self.comparar = comparar
 
-            QMessageBox.critical(
-                self,
-                "Error durante la comparación",
-                f"No se ha podido comparar los archivos:\n\n{error}",
-            )
+            def run(self):
+                try:
+                    res = comparar_dataframes(
+                        self.df1,
+                        self.df2,
+                        columnas_clave=self.claves,
+                        columnas_comparar=self.comparar,
+                    )
+                    self.terminado.emit(res, None)
+                except Exception as ex:
+                    self.terminado.emit(None, ex)
 
-            return
+        self.worker = WorkerComparar(self.df_1, self.df_2, columnas_clave, columnas_comparar)
 
-        # ---------------------------------------------------------
-        # Mostrar resultados
-        # ---------------------------------------------------------
+        def _al_terminar(cambios, error):
+            dialogo.close()
+            if error:
+                QMessageBox.critical(
+                    self,
+                    "Error durante la comparación",
+                    f"No se ha podido comparar los archivos:\n\n{error}",
+                )
+                return
 
-        self.modelo_cambios.actualizar(cambios)
+            self.modelo_cambios.actualizar(cambios)
+            self.ui.tabWidget.setCurrentWidget(self.ui.tab_resultados)
+            self.ui.labelResumen.setText(f"{len(cambios)} cambios encontrados")
+            self.ui.tableViewCambios.resizeColumnsToContents()
+            self.ui.statusBar.showMessage("Comparación completada correctamente.")
 
-        self.ui.tabWidget.setCurrentWidget(
-            self.ui.tab_resultados
-        )
-        self.ui.labelResumen.setText(
-            f"{len(cambios)} cambios encontrados"
-        )
-
-        # Ajustar columnas
-        self.ui.tableViewCambios.resizeColumnsToContents()
-
-        self.ui.statusBar.showMessage(
-            "Comparación completada correctamente."
-        )
+        self.worker.terminado.connect(_al_terminar)
+        self.worker.start()
 
     def _obtener_fila_modelo_origen(self, index):
         """
@@ -2122,46 +2146,87 @@ class MainWindow(QMainWindow):
         if not ruta_bd:
             return
 
-        try:
-            from src.excel.comparador import comparar_dataframes
+        from src.excel.comparador import comparar_dataframes
+
+        pasos_totales = len(rutas) - 1
+        dialogo = QProgressDialog("Procesando archivos...", "Cancelar", 0, pasos_totales, self)
+        dialogo.setWindowTitle("Procesando Comparación Múltiple")
+        dialogo.setModal(True)
+        dialogo.show()
+
+        class WorkerMultiple(QThread):
+            progreso = Signal(int, str)
+            finalizado = Signal(int, object)
+
+            def __init__(self, rutas_files, hoja, claves, comparar, db_path):
+                super().__init__()
+                self.rutas = rutas_files
+                self.hoja = hoja
+                self.claves = claves
+                self.comparar = comparar
+                self.db_path = db_path
+
+            def run(self):
+                try:
+                    repositorio = RepositorioSQLite(self.db_path)
+                    total_c = 0
+
+                    df_ant = leer_excel(self.rutas[0], self.hoja)
+
+                    for i in range(len(self.rutas) - 1):
+                        if self.isInterrupted():
+                            break
+
+                        r_ant = self.rutas[i]
+                        r_nue = self.rutas[i + 1]
+
+                        self.progreso.emit(i, f"Comparando ({i + 1}/{len(self.rutas) - 1}): {Path(r_nue).name}")
+
+                        df_nue = leer_excel(r_nue, self.hoja)
+                        ident = obtener_identificador_propuesto(r_ant, r_nue)
+
+                        cambios = comparar_dataframes(
+                            df_ant,
+                            df_nue,
+                            columnas_clave=self.claves,
+                            columnas_comparar=self.comparar,
+                        )
+
+                        repositorio.guardar_comparacion(
+                            identificador=ident,
+                            archivo_anterior=r_ant,
+                            archivo_nuevo=r_nue,
+                            hoja_anterior=self.hoja,
+                            hoja_nueva=self.hoja,
+                            columnas_clave=self.claves,
+                            columnas_comparadas=self.comparar,
+                            cambios=cambios,
+                        )
+
+                        total_c += len(cambios)
+                        df_ant = df_nue
+
+                    self.finalizado.emit(total_c, None)
+                except Exception as ex:
+                    self.finalizado.emit(0, ex)
+
+        self.worker_multiple = WorkerMultiple(rutas, nombre_hoja, columnas_clave, columnas_comparar, ruta_bd)
+
+        def _al_progresar(val, msg):
+            dialogo.setValue(val)
+            dialogo.setLabelText(msg)
+
+        def _al_finalizar(total_cambios, error):
+            dialogo.close()
+            if error:
+                QMessageBox.critical(
+                    self,
+                    "Error en comparación múltiple",
+                    f"No se pudo completar el procesamiento:\n\n{error}",
+                )
+                return
 
             repositorio = RepositorioSQLite(ruta_bd)
-            total_cambios = 0
-
-            # Cargar primer dataframe
-            df_anterior = leer_excel(rutas[0], nombre_hoja)
-
-            for i in range(len(rutas) - 1):
-                ruta_anterior = rutas[i]
-                ruta_nueva = rutas[i + 1]
-
-                df_nuevo = leer_excel(ruta_nueva, nombre_hoja)
-
-                identificador = obtener_identificador_propuesto(
-                    ruta_anterior,
-                    ruta_nueva,
-                )
-
-                cambios = comparar_dataframes(
-                    df_anterior,
-                    df_nuevo,
-                    columnas_clave=columnas_clave,
-                    columnas_comparar=columnas_comparar,
-                )
-
-                repositorio.guardar_comparacion(
-                    identificador=identificador,
-                    archivo_anterior=ruta_anterior,
-                    archivo_nuevo=ruta_nueva,
-                    hoja_anterior=nombre_hoja,
-                    hoja_nueva=nombre_hoja,
-                    columnas_clave=columnas_clave,
-                    columnas_comparadas=columnas_comparar,
-                    cambios=cambios,
-                )
-
-                total_cambios += len(cambios)
-                df_anterior = df_nuevo
 
             QMessageBox.information(
                 self,
@@ -2191,9 +2256,7 @@ class MainWindow(QMainWindow):
                 f"Procesados {len(rutas)} archivos secuencialmente."
             )
 
-        except Exception as error:
-            QMessageBox.critical(
-                self,
-                "Error en comparación múltiple",
-                f"No se pudo completar el procesamiento:\n\n{error}",
-            )
+        dialogo.canceled.connect(lambda: self.worker_multiple.requestInterruption())
+        self.worker_multiple.progreso.connect(_al_progresar)
+        self.worker_multiple.finalizado.connect(_al_finalizar)
+        self.worker_multiple.start()
