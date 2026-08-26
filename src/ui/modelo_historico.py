@@ -12,31 +12,28 @@ from PySide6.QtGui import (
 from PySide6.QtWidgets import QApplication
 
 
-def _mezclar_color(
-    color_base,
-    color_cambio,
-    porcentaje,
-):
+def _obtener_colores_cambio(tipo: str, es_oscuro: bool):
     """
-    Mezcla un color de fondo con un color indicador.
+    Devuelve la pareja (fondo, texto) con contraste adecuado
+    según el tipo de cambio y si el tema es oscuro o claro.
     """
 
-    r = int(
-        color_base.red() * (1 - porcentaje)
-        + color_cambio.red() * porcentaje
-    )
+    if es_oscuro:
+        if tipo == "NUEVO":
+            return QColor(20, 60, 30), QColor(140, 230, 160)
+        if tipo == "ELIMINADO":
+            return QColor(70, 25, 25), QColor(255, 160, 160)
+        if tipo == "MODIFICADO":
+            return QColor(65, 50, 15), QColor(255, 220, 130)
+    else:
+        if tipo == "NUEVO":
+            return QColor(230, 245, 233), QColor(20, 90, 40)
+        if tipo == "ELIMINADO":
+            return QColor(253, 235, 235), QColor(160, 30, 30)
+        if tipo == "MODIFICADO":
+            return QColor(255, 248, 225), QColor(140, 90, 0)
 
-    g = int(
-        color_base.green() * (1 - porcentaje)
-        + color_cambio.green() * porcentaje
-    )
-
-    b = int(
-        color_base.blue() * (1 - porcentaje)
-        + color_cambio.blue() * porcentaje
-    )
-
-    return QColor(r, g, b)
+    return None, None
 
 
 class ModeloHistorico(QAbstractTableModel):
@@ -101,40 +98,20 @@ class ModeloHistorico(QAbstractTableModel):
             return str(valor)
 
         # =========================================================
-        # COLOR DE FONDO
+        # ESTILOS DE COLOR DE FONDO Y TEXTO
         # =========================================================
 
+        paleta = QApplication.palette()
+        fondo_base = paleta.color(QPalette.ColorRole.Base)
+        es_oscuro = fondo_base.lightness() < 128
+
+        fondo, texto = _obtener_colores_cambio(cambio["tipo"], es_oscuro)
+
         if role == Qt.ItemDataRole.BackgroundRole:
+            return fondo
 
-            paleta = QApplication.palette()
-
-            fondo = paleta.color(
-                QPalette.ColorRole.Base
-            )
-
-            if cambio["tipo"] == "NUEVO":
-
-                return _mezclar_color(
-                    fondo,
-                    QColor(80, 180, 80),
-                    0.18,
-                )
-
-            if cambio["tipo"] == "ELIMINADO":
-
-                return _mezclar_color(
-                    fondo,
-                    QColor(220, 80, 80),
-                    0.18,
-                )
-
-            if cambio["tipo"] == "MODIFICADO":
-
-                return _mezclar_color(
-                    fondo,
-                    QColor(230, 190, 50),
-                    0.22,
-                )
+        if role == Qt.ItemDataRole.ForegroundRole:
+            return texto
 
         return None
 
