@@ -268,7 +268,7 @@ def _valores_iguales(
     - valores nulos
     - números enteros y decimales
     - fechas
-    - textos
+    - textos (normalizando espacios en blanco)
     """
 
     anterior_es_nulo = pd.isna(valor_1)
@@ -291,6 +291,10 @@ def _valores_iguales(
         pd.Timestamp,
     ):
         return valor_1 == valor_2
+
+    # Para cadenas de texto, normalizar eliminando espacios iniciales/finales
+    if isinstance(valor_1, str) and isinstance(valor_2, str):
+        return valor_1.strip() == valor_2.strip()
 
     return valor_1 == valor_2
 

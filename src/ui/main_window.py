@@ -1476,52 +1476,17 @@ class MainWindow(QMainWindow):
 
     def exportar_historico_excel(self):
         """
-        Exporta a Excel exactamente los registros que se están
-        mostrando actualmente en la tabla del histórico.
-
-        Respeta:
-        - filtros aplicados
-        - orden de las filas
-        - columnas visibles
+        Exporta a Excel los registros del histórico
+        incluyendo Identificador, Clave, Tipo, Columna, Valor 1 y Valor 2.
         """
 
-        tabla = self.ui.tableViewHistorico
-
-        # =========================================================
-        # OBTENER EL PROXY REAL DE FILTRADO
-        # =========================================================
-
-        modelo = tabla._filter_proxy
-
-        if modelo is None:
-
+        if not self.modelo_historico or not self.modelo_historico.cambios:
             QMessageBox.warning(
                 self,
                 "Sin datos",
-                "No hay datos para exportar.",
+                "No hay registros visibles en el histórico para exportar.",
             )
-
             return
-
-        # =========================================================
-        # COMPROBAR FILAS
-        # =========================================================
-
-        numero_filas = modelo.rowCount()
-
-        if numero_filas == 0:
-
-            QMessageBox.warning(
-                self,
-                "Sin datos",
-                "No hay registros visibles para exportar.",
-            )
-
-            return
-
-        # =========================================================
-        # ELEGIR ARCHIVO
-        # =========================================================
 
         nombre_sugerido = "Historico.xlsx"
         if hasattr(self, "ruta_historico") and self.ruta_historico:
@@ -1540,87 +1505,39 @@ class MainWindow(QMainWindow):
             return
 
         try:
-
             libro = Workbook()
-
             hoja = libro.active
-
             hoja.title = "Histórico"
 
-            # =====================================================
-            # COLUMNAS
-            # =====================================================
+            encabezados = [
+                "Identificador",
+                "Clave",
+                "Tipo",
+                "Columna",
+                "Valor 1",
+                "Valor 2",
+            ]
 
-            columnas = modelo.columnCount()
+            # Escribir cabecera
+            for col_idx, encabezado in enumerate(encabezados, start=1):
+                celda = hoja.cell(row=1, column=col_idx, value=encabezado)
+                celda.font = Font(bold=True)
 
-            columnas_exportar = []
-
-            for columna in range(columnas):
-
-                # Comprobar si la columna está visible
-                if tabla.isColumnHidden(columna):
-                    continue
-
-                encabezado = modelo.headerData(
-                    columna,
-                    Qt.Orientation.Horizontal,
-                    Qt.ItemDataRole.DisplayRole,
-                )
-
-                columnas_exportar.append(
-                    (
-                        columna,
-                        encabezado,
-                    )
-                )
-
-            # =====================================================
-            # CABECERAS
-            # =====================================================
-
-            for numero_columna, (_, encabezado) in enumerate(
-                columnas_exportar,
-                start=1,
-            ):
-
-                celda = hoja.cell(
-                    row=1,
-                    column=numero_columna,
-                    value=encabezado,
-                )
-
-                celda.font = Font(
-                    bold=True
-                )
-
-            # =====================================================
-            # FILAS FILTRADAS
-            # =====================================================
-
-            for fila in range(numero_filas):
-
-                for numero_columna, (
-                    columna,
-                    _,
-                ) in enumerate(
-                    columnas_exportar,
-                    start=1,
-                ):
-
-                    indice = modelo.index(
-                        fila,
-                        columna,
-                    )
-
-                    valor = modelo.data(
-                        indice,
-                        Qt.ItemDataRole.DisplayRole,
-                    )
-
+            # Escribir datos
+            for fila_idx, cambio in enumerate(self.modelo_historico.cambios, start=2):
+                valores = [
+                    cambio["identificador"],
+                    cambio["clave"],
+                    cambio["tipo"],
+                    cambio["columna"],
+                    cambio["valor_1"],
+                    cambio["valor_2"],
+                ]
+                for col_idx, valor in enumerate(valores, start=1):
                     hoja.cell(
-                        row=fila + 2,
-                        column=numero_columna,
-                        value=valor,
+                        row=fila_idx,
+                        column=col_idx,
+                        value="" if valor is None else str(valor),
                     )
 
             # =====================================================
