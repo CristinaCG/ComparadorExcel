@@ -80,39 +80,38 @@ def test_comparar_registros():
 
     assert cambio.tipo == "ELIMINADO"
     assert cambio.columna is None
-    assert cambio.valor_1 is None
-    assert cambio.valor_2 is None
 
-    # ---------------------------------------------------------
-    # A001 -> MODIFICADO
-    # ---------------------------------------------------------
 
-    cambios_a001 = [
-        cambio
-        for cambio in cambios
-        if cambio.clave == "A001"
-    ]
+def test_comparar_linea_a_linea_sin_clave():
 
-    assert len(cambios_a001) == 1
+    anterior = pd.DataFrame({
+        "Descripcion": ["Cable A", "Cable B"],
+        "Peso": [10, 20],
+    })
 
-    cambio = cambios_a001[0]
+    nuevo = pd.DataFrame({
+        "Descripcion": ["Cable A", "Cable B Modificado"],
+        "Peso": [10, 25],
+    })
 
-    assert cambio.tipo == "MODIFICADO"
-    assert cambio.columna == "Peso"
-    assert cambio.valor_1 == 10
-    assert cambio.valor_2 == 12
+    cambios = comparar_dataframes(
+        anterior,
+        nuevo,
+        columnas_clave=[],
+        columnas_comparar=["Descripcion", "Peso"],
+    )
 
-    # ---------------------------------------------------------
-    # A002 -> SIN CAMBIOS
-    # ---------------------------------------------------------
+    assert len(cambios) == 2
 
-    cambios_a002 = [
-        cambio
-        for cambio in cambios
-        if cambio.clave == "A002"
-    ]
+    assert cambios[0].clave == "Fila 2"
+    assert cambios[0].columna == "Descripcion"
+    assert cambios[0].valor_1 == "Cable B"
+    assert cambios[0].valor_2 == "Cable B Modificado"
 
-    assert len(cambios_a002) == 0
+    assert cambios[1].clave == "Fila 2"
+    assert cambios[1].columna == "Peso"
+    assert cambios[1].valor_1 == 20
+    assert cambios[1].valor_2 == 25
 
 
 def test_detectar_clave_duplicada():

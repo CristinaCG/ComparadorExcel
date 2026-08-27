@@ -64,32 +64,28 @@ def comparar_dataframes(
     # VALIDACIÓN DE COLUMNAS
     # ---------------------------------------------------------
 
-    if not columnas_clave:
-        raise ValueError(
-            "Debe seleccionarse al menos una columna clave."
+    if columnas_clave:
+        columnas_faltantes_anterior = _buscar_columnas_faltantes(
+            anterior,
+            columnas_clave,
         )
 
-    columnas_faltantes_anterior = _buscar_columnas_faltantes(
-        anterior,
-        columnas_clave,
-    )
-
-    columnas_faltantes_nuevo = _buscar_columnas_faltantes(
-        nuevo,
-        columnas_clave,
-    )
-
-    if columnas_faltantes_anterior:
-        raise ColumnaNoEncontradaError(
-            "Columnas clave inexistentes en el Excel anterior: "
-            f"{columnas_faltantes_anterior}"
+        columnas_faltantes_nuevo = _buscar_columnas_faltantes(
+            nuevo,
+            columnas_clave,
         )
 
-    if columnas_faltantes_nuevo:
-        raise ColumnaNoEncontradaError(
-            "Columnas clave inexistentes en el Excel nuevo: "
-            f"{columnas_faltantes_nuevo}"
-        )
+        if columnas_faltantes_anterior:
+            raise ColumnaNoEncontradaError(
+                "Columnas clave inexistentes en el Excel anterior: "
+                f"{columnas_faltantes_anterior}"
+            )
+
+        if columnas_faltantes_nuevo:
+            raise ColumnaNoEncontradaError(
+                "Columnas clave inexistentes en el Excel nuevo: "
+                f"{columnas_faltantes_nuevo}"
+            )
 
     columnas_faltantes_comparar_anterior = _buscar_columnas_faltantes(
         anterior,
@@ -117,25 +113,30 @@ def comparar_dataframes(
     # CREAR CLAVES
     # ---------------------------------------------------------
 
-    clave_anterior = crear_clave(
-        anterior,
-        columnas_clave,
-    )
+    if columnas_clave:
+        clave_anterior = crear_clave(
+            anterior,
+            columnas_clave,
+        )
 
-    clave_nuevo = crear_clave(
-        nuevo,
-        columnas_clave,
-    )
+        clave_nuevo = crear_clave(
+            nuevo,
+            columnas_clave,
+        )
 
-    _validar_claves_unicas(
-        clave_anterior,
-        "Excel anterior",
-    )
+        _validar_claves_unicas(
+            clave_anterior,
+            "Excel anterior",
+        )
 
-    _validar_claves_unicas(
-        clave_nuevo,
-        "Excel nuevo",
-    )
+        _validar_claves_unicas(
+            clave_nuevo,
+            "Excel nuevo",
+        )
+    else:
+        # Comparación línea a línea por posición de fila
+        clave_anterior = pd.Series([f"Fila {i + 1}" for i in range(len(anterior))], index=anterior.index)
+        clave_nuevo = pd.Series([f"Fila {i + 1}" for i in range(len(nuevo))], index=nuevo.index)
 
     # Indexar dataframes por la clave de comparación
     df_ant = anterior[columnas_comparar].copy()

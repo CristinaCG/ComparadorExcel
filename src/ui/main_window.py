@@ -277,7 +277,7 @@ class MainWindow(QMainWindow):
         """
 
         # Icono de ventana
-        ruta_icono = Path("images/pine logo.png")
+        ruta_icono = Path("images/pine_logo.ico")
         if ruta_icono.exists():
             self.setWindowIcon(QIcon(str(ruta_icono)))
 
@@ -1066,19 +1066,6 @@ class MainWindow(QMainWindow):
             columnas_comparadas=columnas_comparar,
         )
 
-        # ---------------------------------------------------------
-        # Validar clave
-        # ---------------------------------------------------------
-
-        if not columnas_clave:
-
-            QMessageBox.warning(
-                self,
-                "Falta la clave",
-                "Selecciona al menos una columna clave.",
-            )
-
-            return
 
         # ---------------------------------------------------------
         # Validar columnas a comparar
@@ -2091,15 +2078,6 @@ class MainWindow(QMainWindow):
             for item in self.ui.listaColumnasCompararMultiple.selectedItems()
         ]
 
-        if not columnas_clave:
-            QMessageBox.warning(
-                self,
-                "Falta la clave",
-                "Selecciona al menos una columna clave.",
-            )
-
-            return
-
         if not columnas_comparar:
             QMessageBox.warning(
                 self,
@@ -2109,14 +2087,39 @@ class MainWindow(QMainWindow):
 
             return
 
-        # Pedir destino SQLite
-        nombre_bd = obtener_nombre_bd(rutas[0], rutas[-1])
-        ruta_bd, _ = QFileDialog.getSaveFileName(
+        # Pedir destino SQLite (preguntar si crear nueva o usar existente)
+        respuesta = QMessageBox.question(
             self,
-            "Crear base de datos SQLite para Histórico Múltiple",
-            nombre_bd,
-            "Base de datos SQLite (*.sqlite *.db)",
+            "Comparación múltiple",
+            "¿Quieres crear una nueva base de datos para el histórico?\n\n"
+            "Sí → Crear una nueva base de datos\n"
+            "No → Añadir a una base de datos existente",
+            buttons=(
+                QMessageBox.StandardButton.Yes
+                | QMessageBox.StandardButton.No
+                | QMessageBox.StandardButton.Cancel
+            ),
+            defaultButton=QMessageBox.StandardButton.Yes,
         )
+
+        if respuesta == QMessageBox.StandardButton.Cancel:
+            return
+
+        if respuesta == QMessageBox.StandardButton.Yes:
+            nombre_bd = obtener_nombre_bd(rutas[0], rutas[-1])
+            ruta_bd, _ = QFileDialog.getSaveFileName(
+                self,
+                "Crear base de datos SQLite para Histórico Múltiple",
+                nombre_bd,
+                "Base de datos SQLite (*.sqlite *.db)",
+            )
+        else:
+            ruta_bd, _ = QFileDialog.getOpenFileName(
+                self,
+                "Seleccionar base de datos SQLite existente",
+                "",
+                "Base de datos SQLite (*.sqlite *.db)",
+            )
 
         if not ruta_bd:
             return
