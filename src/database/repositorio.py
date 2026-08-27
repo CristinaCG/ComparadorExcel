@@ -47,6 +47,9 @@ class RepositorioSQLite:
 
                 CREATE INDEX IF NOT EXISTS idx_cambios_columna
                 ON cambios(columna);
+
+                CREATE INDEX IF NOT EXISTS idx_cambios_comp_clave
+                ON cambios(comparacion_id, clave);
                 """
             )
 
@@ -273,33 +276,47 @@ class RepositorioSQLite:
 
             return cambios
 
-    def obtener_historico_cambios(self):
+    def obtener_historico_cambios(
+        self,
+        texto_clave: str | None = None,
+        identificador: str | None = None,
+        limite: int | None = 10000,
+    ):
         self.inicializar()
 
+        query = """
+            SELECT
+                comparaciones.id AS comparacion_id,
+                comparaciones.fecha,
+                comparaciones.identificador,
+                cambios.id AS cambio_id,
+                cambios.clave,
+                cambios.tipo,
+                cambios.columna,
+                cambios.valor_1,
+                cambios.valor_2
+            FROM cambios
+            INNER JOIN comparaciones
+                ON cambios.comparacion_id = comparaciones.id
+            WHERE 1=1
+        """
+        parametros = []
+
+        if texto_clave:
+            query += " AND LOWER(cambios.clave) LIKE ?"
+            parametros.append(f"%{texto_clave.lower()}%")
+
+        if identificador and identificador != "Todos":
+            query += " AND comparaciones.identificador = ?"
+            parametros.append(identificador)
+
+        query += " ORDER BY comparaciones.fecha DESC, cambios.id"
+
+        if limite:
+            query += f" LIMIT {int(limite)}"
+
         with conectar(self.ruta) as conexion:
-
-            cambios = conexion.execute(
-                """
-                SELECT
-                    comparaciones.id AS comparacion_id,
-                    comparaciones.fecha,
-                    comparaciones.identificador,
-                    cambios.id AS cambio_id,
-                    cambios.clave,
-                    cambios.tipo,
-                    cambios.columna,
-                    cambios.valor_1,
-                    cambios.valor_2
-                FROM cambios
-
-                INNER JOIN comparaciones
-                    ON cambios.comparacion_id = comparaciones.id
-
-                ORDER BY
-                    comparaciones.fecha DESC,
-                    cambios.id
-                """
-            ).fetchall()
+            cambios = conexion.execute(query, parametros).fetchall()
             return cambios
 
 def _convertir_valor(valor):

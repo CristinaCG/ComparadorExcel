@@ -1697,7 +1697,6 @@ class MainWindow(QMainWindow):
             self.ui.lineEditBuscarClaveHistorico
             .text()
             .strip()
-            .lower()
         )
 
         identificador_seleccionado = (
@@ -1706,41 +1705,14 @@ class MainWindow(QMainWindow):
             .strip()
         )
 
-        cambios = (
+        cambios_filtrados = (
             self.repositorio_historico
-            .obtener_historico_cambios()
+            .obtener_historico_cambios(
+                texto_clave=texto_clave if texto_clave else None,
+                identificador=identificador_seleccionado if identificador_seleccionado else None,
+                limite=10000,
+            )
         )
-
-        cambios_filtrados = []
-
-        for cambio in cambios:
-
-            clave = str(
-                cambio["clave"]
-            ).lower()
-
-            identificador = str(
-                cambio["identificador"]
-            )
-
-            coincide_clave = (
-                not texto_clave
-                or texto_clave in clave
-            )
-
-            if identificador_seleccionado == "Todos":
-                coincide_identificador = True
-            else:
-                coincide_identificador = (
-                    identificador
-                    == identificador_seleccionado
-                )
-
-            if (
-                coincide_clave
-                and coincide_identificador
-            ):
-                cambios_filtrados.append(cambio)
 
         self.modelo_historico.actualizar(
             cambios_filtrados
