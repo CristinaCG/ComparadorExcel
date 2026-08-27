@@ -573,7 +573,7 @@ class MainWindow(QMainWindow):
         html_nuevo = self._texto_con_diferencias(
             texto_anterior,
             texto_nuevo,
-            True,
+            False,
         )
 
         edit1.setHtml(html_anterior)
