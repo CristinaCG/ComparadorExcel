@@ -1518,6 +1518,8 @@ class MainWindow(QMainWindow):
                 "Valor 2",
             ]
 
+            numero_filas = len(self.modelo_historico.cambios)
+
             # Escribir cabecera
             for col_idx, encabezado in enumerate(encabezados, start=1):
                 celda = hoja.cell(row=1, column=col_idx, value=encabezado)
