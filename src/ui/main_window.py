@@ -1476,15 +1476,42 @@ class MainWindow(QMainWindow):
 
     def exportar_historico_excel(self):
         """
-        Exporta a Excel los registros del histórico
-        incluyendo Identificador, Clave, Tipo, Columna, Valor 1 y Valor 2.
+        Exporta a Excel TODOS los registros del histórico
+        que coincidan con el filtro actual directamente desde la base de datos (sin límite de visualización UI).
         """
 
-        if not self.modelo_historico or not self.modelo_historico.cambios:
+        if not hasattr(self, "repositorio_historico") or self.repositorio_historico is None:
             QMessageBox.warning(
                 self,
                 "Sin datos",
-                "No hay registros visibles en el histórico para exportar.",
+                "Primero debes abrir una base de datos de histórico.",
+            )
+            return
+
+        texto_clave = (
+            self.ui.lineEditBuscarClaveHistorico
+            .text()
+            .strip()
+        )
+
+        identificador_seleccionado = (
+            self.ui.comboBoxIdentificadorHistorico
+            .currentText()
+            .strip()
+        )
+
+        # Consultar TODOS los registros filtrados sin límite en la base de datos
+        cambios_exportar = self.repositorio_historico.obtener_historico_cambios(
+            texto_clave=texto_clave if texto_clave else None,
+            identificador=identificador_seleccionado if identificador_seleccionado else None,
+            limite=None,
+        )
+
+        if not cambios_exportar:
+            QMessageBox.warning(
+                self,
+                "Sin datos",
+                "No hay registros que coincidan con el filtro para exportar.",
             )
             return
 
@@ -1518,7 +1545,7 @@ class MainWindow(QMainWindow):
                 "Valor 2",
             ]
 
-            numero_filas = len(self.modelo_historico.cambios)
+            numero_filas = len(cambios_exportar)
 
             # Escribir cabecera
             for col_idx, encabezado in enumerate(encabezados, start=1):
@@ -1526,7 +1553,7 @@ class MainWindow(QMainWindow):
                 celda.font = Font(bold=True)
 
             # Escribir datos
-            for fila_idx, cambio in enumerate(self.modelo_historico.cambios, start=2):
+            for fila_idx, cambio in enumerate(cambios_exportar, start=2):
                 valores = [
                     cambio["identificador"],
                     cambio["clave"],
