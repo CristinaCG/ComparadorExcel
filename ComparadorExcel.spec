@@ -5,7 +5,7 @@ a = Analysis(
     ['src/main.py'],
     pathex=[],
     binaries=[],
-    datas=[('images/pine logo.png', 'images'), ('.venv/Lib/site-packages/emoji_data_python/data', 'emoji_data_python/data')],
+    datas=[('images/pine_logo.ico', 'images'), ('.venv/Lib/site-packages/emoji_data_python/data', 'emoji_data_python/data')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
