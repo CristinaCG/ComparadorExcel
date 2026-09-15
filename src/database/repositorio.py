@@ -47,6 +47,9 @@ class RepositorioSQLite:
 
                 CREATE INDEX IF NOT EXISTS idx_cambios_columna
                 ON cambios(columna);
+
+                CREATE INDEX IF NOT EXISTS idx_cambios_comp_clave
+                ON cambios(comparacion_id, clave);
                 """
             )
 
@@ -66,10 +69,6 @@ class RepositorioSQLite:
 
         with conectar(self.ruta) as conexion:
 
-            # =========================================================
-            # COMPROBAR SI YA EXISTE EL IDENTIFICADOR
-            # =========================================================
-
             comparacion_existente = conexion.execute(
                 """
                 SELECT id
@@ -80,12 +79,7 @@ class RepositorioSQLite:
                 (identificador,),
             ).fetchone()
 
-            # =========================================================
-            # SI NO EXISTE, CREAR LA COMPARACIÓN
-            # =========================================================
-
             if comparacion_existente is None:
-
                 cursor = conexion.execute(
                     """
                     INSERT INTO comparaciones (
@@ -115,47 +109,47 @@ class RepositorioSQLite:
                         ),
                     ),
                 )
-
                 comparacion_id = cursor.lastrowid
-
-            # =========================================================
-            # SI YA EXISTE, UTILIZAR ESA COMPARACIÓN
-            # =========================================================
-
             else:
-
                 comparacion_id = comparacion_existente["id"]
 
-            # =========================================================
-            # INSERTAR SOLO CAMBIOS QUE NO EXISTAN
-            # =========================================================
+            # Obtener claves existentes para esta comparación en un único query
+            registros_existentes = conexion.execute(
+                """
+                SELECT clave, tipo, COALESCE(columna, '')
+                FROM cambios
+                WHERE comparacion_id = ?
+                """,
+                (comparacion_id,),
+            ).fetchall()
+
+            cambios_existentes = {
+                (reg[0], reg[1], reg[2]) for reg in registros_existentes
+            }
+
+            registros_insertar = []
 
             for cambio in cambios:
+                col_val = cambio.columna if cambio.columna is not None else ""
+                tupla_clave = (cambio.clave, cambio.tipo, col_val)
 
-                existe = conexion.execute(
-                    """
-                    SELECT 1
-                    FROM cambios
-                    WHERE comparacion_id = ?
-                    AND clave = ?
-                    AND tipo = ?
-                    AND columna = ?
-                    LIMIT 1
-                    """,
+                if tupla_clave in cambios_existentes:
+                    continue
+
+                cambios_existentes.add(tupla_clave)
+                registros_insertar.append(
                     (
                         comparacion_id,
                         cambio.clave,
                         cambio.tipo,
                         cambio.columna,
-                    ),
-                ).fetchone()
+                        _convertir_valor(cambio.valor_1),
+                        _convertir_valor(cambio.valor_2),
+                    )
+                )
 
-                # Ya existe → no hacemos nada
-                if existe is not None:
-                    continue
-
-                # No existe → insertar
-                conexion.execute(
+            if registros_insertar:
+                conexion.executemany(
                     """
                     INSERT INTO cambios (
                         comparacion_id,
@@ -167,14 +161,7 @@ class RepositorioSQLite:
                     )
                     VALUES (?, ?, ?, ?, ?, ?)
                     """,
-                    (
-                        comparacion_id,
-                        cambio.clave,
-                        cambio.tipo,
-                        cambio.columna,
-                        _convertir_valor(cambio.valor_1),
-                        _convertir_valor(cambio.valor_2),
-                    ),
+                    registros_insertar,
                 )
 
             return comparacion_id
@@ -289,33 +276,47 @@ class RepositorioSQLite:
 
             return cambios
 
-    def obtener_historico_cambios(self):
+    def obtener_historico_cambios(
+        self,
+        texto_clave: str | None = None,
+        identificador: str | None = None,
+        limite: int | None = 10000,
+    ):
         self.inicializar()
 
+        query = """
+            SELECT
+                comparaciones.id AS comparacion_id,
+                comparaciones.fecha,
+                comparaciones.identificador,
+                cambios.id AS cambio_id,
+                cambios.clave,
+                cambios.tipo,
+                cambios.columna,
+                cambios.valor_1,
+                cambios.valor_2
+            FROM cambios
+            INNER JOIN comparaciones
+                ON cambios.comparacion_id = comparaciones.id
+            WHERE 1=1
+        """
+        parametros = []
+
+        if texto_clave:
+            query += " AND LOWER(cambios.clave) LIKE ?"
+            parametros.append(f"%{texto_clave.lower()}%")
+
+        if identificador and identificador != "Todos":
+            query += " AND comparaciones.identificador = ?"
+            parametros.append(identificador)
+
+        query += " ORDER BY comparaciones.fecha DESC, cambios.id"
+
+        if limite:
+            query += f" LIMIT {int(limite)}"
+
         with conectar(self.ruta) as conexion:
-
-            cambios = conexion.execute(
-                """
-                SELECT
-                    comparaciones.id AS comparacion_id,
-                    comparaciones.fecha,
-                    comparaciones.identificador,
-                    cambios.id AS cambio_id,
-                    cambios.clave,
-                    cambios.tipo,
-                    cambios.columna,
-                    cambios.valor_1,
-                    cambios.valor_2
-                FROM cambios
-
-                INNER JOIN comparaciones
-                    ON cambios.comparacion_id = comparaciones.id
-
-                ORDER BY
-                    comparaciones.fecha DESC,
-                    cambios.id
-                """
-            ).fetchall()
+            cambios = conexion.execute(query, parametros).fetchall()
             return cambios
 
 def _convertir_valor(valor):

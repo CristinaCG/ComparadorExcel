@@ -26,7 +26,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(807, 737)
+        MainWindow.resize(850, 750)
         MainWindow.setMinimumSize(QSize(800, 600))
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
@@ -139,7 +139,7 @@ class Ui_MainWindow(object):
 
         self.listaColumnasClave = QListWidget(self.groupBoxClave)
         self.listaColumnasClave.setObjectName(u"listaColumnasClave")
-        self.listaColumnasClave.setSelectionMode(QAbstractItemView.NoSelection)
+        self.listaColumnasClave.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
         self.verticalLayout_5.addWidget(self.listaColumnasClave)
 
@@ -162,7 +162,7 @@ class Ui_MainWindow(object):
 
         self.listaColumnasComparar = QListWidget(self.groupBoxColumnasComparar)
         self.listaColumnasComparar.setObjectName(u"listaColumnasComparar")
-        self.listaColumnasComparar.setSelectionMode(QAbstractItemView.NoSelection)
+        self.listaColumnasComparar.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
         self.verticalLayout_6.addWidget(self.listaColumnasComparar)
 
@@ -181,6 +181,111 @@ class Ui_MainWindow(object):
         self.verticalLayout_2.addWidget(self.pushButtonComparar)
 
         self.tabWidget.addTab(self.tab_comparar, "")
+        self.tab_comparacion_multiple = QWidget()
+        self.tab_comparacion_multiple.setObjectName(u"tab_comparacion_multiple")
+        self.verticalLayout_multiple = QVBoxLayout(self.tab_comparacion_multiple)
+        self.verticalLayout_multiple.setObjectName(u"verticalLayout_multiple")
+        self.groupBoxArchivosMultiples = QGroupBox(self.tab_comparacion_multiple)
+        self.groupBoxArchivosMultiples.setObjectName(u"groupBoxArchivosMultiples")
+        self.horizontalLayout_multiple_files = QHBoxLayout(self.groupBoxArchivosMultiples)
+        self.horizontalLayout_multiple_files.setObjectName(u"horizontalLayout_multiple_files")
+        self.listaArchivosMultiples = QListWidget(self.groupBoxArchivosMultiples)
+        self.listaArchivosMultiples.setObjectName(u"listaArchivosMultiples")
+
+        self.horizontalLayout_multiple_files.addWidget(self.listaArchivosMultiples)
+
+        self.verticalLayout_botones_multiple = QVBoxLayout()
+        self.verticalLayout_botones_multiple.setObjectName(u"verticalLayout_botones_multiple")
+        self.pushButtonAgregarArchivosMultiples = QPushButton(self.groupBoxArchivosMultiples)
+        self.pushButtonAgregarArchivosMultiples.setObjectName(u"pushButtonAgregarArchivosMultiples")
+
+        self.verticalLayout_botones_multiple.addWidget(self.pushButtonAgregarArchivosMultiples)
+
+        self.pushButtonQuitarArchivoMultiple = QPushButton(self.groupBoxArchivosMultiples)
+        self.pushButtonQuitarArchivoMultiple.setObjectName(u"pushButtonQuitarArchivoMultiple")
+
+        self.verticalLayout_botones_multiple.addWidget(self.pushButtonQuitarArchivoMultiple)
+
+        self.pushButtonSubirArchivoMultiple = QPushButton(self.groupBoxArchivosMultiples)
+        self.pushButtonSubirArchivoMultiple.setObjectName(u"pushButtonSubirArchivoMultiple")
+
+        self.verticalLayout_botones_multiple.addWidget(self.pushButtonSubirArchivoMultiple)
+
+        self.pushButtonBajarArchivoMultiple = QPushButton(self.groupBoxArchivosMultiples)
+        self.pushButtonBajarArchivoMultiple.setObjectName(u"pushButtonBajarArchivoMultiple")
+
+        self.verticalLayout_botones_multiple.addWidget(self.pushButtonBajarArchivoMultiple)
+
+
+        self.horizontalLayout_multiple_files.addLayout(self.verticalLayout_botones_multiple)
+
+
+        self.verticalLayout_multiple.addWidget(self.groupBoxArchivosMultiples)
+
+        self.horizontalLayout_hoja_multiple = QHBoxLayout()
+        self.horizontalLayout_hoja_multiple.setObjectName(u"horizontalLayout_hoja_multiple")
+        self.labelHojaMultiple = QLabel(self.tab_comparacion_multiple)
+        self.labelHojaMultiple.setObjectName(u"labelHojaMultiple")
+
+        self.horizontalLayout_hoja_multiple.addWidget(self.labelHojaMultiple)
+
+        self.comboBoxHojaMultiple = QComboBox(self.tab_comparacion_multiple)
+        self.comboBoxHojaMultiple.setObjectName(u"comboBoxHojaMultiple")
+
+        self.horizontalLayout_hoja_multiple.addWidget(self.comboBoxHojaMultiple)
+
+
+        self.verticalLayout_multiple.addLayout(self.horizontalLayout_hoja_multiple)
+
+        self.groupBoxConfiguracionMultiple = QGroupBox(self.tab_comparacion_multiple)
+        self.groupBoxConfiguracionMultiple.setObjectName(u"groupBoxConfiguracionMultiple")
+        self.horizontalLayout_config_multiple = QHBoxLayout(self.groupBoxConfiguracionMultiple)
+        self.horizontalLayout_config_multiple.setObjectName(u"horizontalLayout_config_multiple")
+        self.groupBoxClaveMultiple = QGroupBox(self.groupBoxConfiguracionMultiple)
+        self.groupBoxClaveMultiple.setObjectName(u"groupBoxClaveMultiple")
+        self.verticalLayout_clave_multiple = QVBoxLayout(self.groupBoxClaveMultiple)
+        self.verticalLayout_clave_multiple.setObjectName(u"verticalLayout_clave_multiple")
+        self.lineEditBuscarClaveMultiple = QLineEdit(self.groupBoxClaveMultiple)
+        self.lineEditBuscarClaveMultiple.setObjectName(u"lineEditBuscarClaveMultiple")
+
+        self.verticalLayout_clave_multiple.addWidget(self.lineEditBuscarClaveMultiple)
+
+        self.listaColumnasClaveMultiple = QListWidget(self.groupBoxClaveMultiple)
+        self.listaColumnasClaveMultiple.setObjectName(u"listaColumnasClaveMultiple")
+        self.listaColumnasClaveMultiple.setSelectionMode(QAbstractItemView.ExtendedSelection)
+
+        self.verticalLayout_clave_multiple.addWidget(self.listaColumnasClaveMultiple)
+
+
+        self.horizontalLayout_config_multiple.addWidget(self.groupBoxClaveMultiple)
+
+        self.groupBoxCompararMultiple = QGroupBox(self.groupBoxConfiguracionMultiple)
+        self.groupBoxCompararMultiple.setObjectName(u"groupBoxCompararMultiple")
+        self.verticalLayout_comparar_multiple = QVBoxLayout(self.groupBoxCompararMultiple)
+        self.verticalLayout_comparar_multiple.setObjectName(u"verticalLayout_comparar_multiple")
+        self.lineEditBuscarCompararMultiple = QLineEdit(self.groupBoxCompararMultiple)
+        self.lineEditBuscarCompararMultiple.setObjectName(u"lineEditBuscarCompararMultiple")
+
+        self.verticalLayout_comparar_multiple.addWidget(self.lineEditBuscarCompararMultiple)
+
+        self.listaColumnasCompararMultiple = QListWidget(self.groupBoxCompararMultiple)
+        self.listaColumnasCompararMultiple.setObjectName(u"listaColumnasCompararMultiple")
+        self.listaColumnasCompararMultiple.setSelectionMode(QAbstractItemView.ExtendedSelection)
+
+        self.verticalLayout_comparar_multiple.addWidget(self.listaColumnasCompararMultiple)
+
+
+        self.horizontalLayout_config_multiple.addWidget(self.groupBoxCompararMultiple)
+
+
+        self.verticalLayout_multiple.addWidget(self.groupBoxConfiguracionMultiple)
+
+        self.pushButtonCompararMultiple = QPushButton(self.tab_comparacion_multiple)
+        self.pushButtonCompararMultiple.setObjectName(u"pushButtonCompararMultiple")
+
+        self.verticalLayout_multiple.addWidget(self.pushButtonCompararMultiple)
+
+        self.tabWidget.addTab(self.tab_comparacion_multiple, "")
         self.tab_resultados = QWidget()
         self.tab_resultados.setObjectName(u"tab_resultados")
         self.verticalLayout_3 = QVBoxLayout(self.tab_resultados)
@@ -452,7 +557,20 @@ class Ui_MainWindow(object):
         self.groupBoxColumnasComparar.setTitle(QCoreApplication.translate("MainWindow", u"Columnas a comparar", None))
         self.lineEditBuscarComparar.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Buscar columna...", None))
         self.pushButtonComparar.setText(QCoreApplication.translate("MainWindow", u"Comparar archivos", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_comparar), QCoreApplication.translate("MainWindow", u"Comparar", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_comparar), QCoreApplication.translate("MainWindow", u"Comparaci\u00f3n individual", None))
+        self.groupBoxArchivosMultiples.setTitle(QCoreApplication.translate("MainWindow", u"Archivos Excel (se comparar\u00e1n en secuencia: 1 \u2192 2 \u2192 3 ...)", None))
+        self.pushButtonAgregarArchivosMultiples.setText(QCoreApplication.translate("MainWindow", u"Agregar archivos", None))
+        self.pushButtonQuitarArchivoMultiple.setText(QCoreApplication.translate("MainWindow", u"Quitar seleccionado", None))
+        self.pushButtonSubirArchivoMultiple.setText(QCoreApplication.translate("MainWindow", u"Subir \u2b06", None))
+        self.pushButtonBajarArchivoMultiple.setText(QCoreApplication.translate("MainWindow", u"Bajar \u2b07", None))
+        self.labelHojaMultiple.setText(QCoreApplication.translate("MainWindow", u"Hoja a comparar (com\u00fan a todos):", None))
+        self.groupBoxConfiguracionMultiple.setTitle(QCoreApplication.translate("MainWindow", u"Configuraci\u00f3n de comparaci\u00f3n en lote", None))
+        self.groupBoxClaveMultiple.setTitle(QCoreApplication.translate("MainWindow", u"Columnas clave", None))
+        self.lineEditBuscarClaveMultiple.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Buscar columna...", None))
+        self.groupBoxCompararMultiple.setTitle(QCoreApplication.translate("MainWindow", u"Columnas a comparar", None))
+        self.lineEditBuscarCompararMultiple.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Buscar columna...", None))
+        self.pushButtonCompararMultiple.setText(QCoreApplication.translate("MainWindow", u"Procesar secuencialmente y crear hist\u00f3rico", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_comparacion_multiple), QCoreApplication.translate("MainWindow", u"Comparaci\u00f3n m\u00faltiple", None))
         self.pushButtonGuardarComparacion.setText(QCoreApplication.translate("MainWindow", u"Guardar comparaci\u00f3n", None))
         self.labelResumen.setText(QCoreApplication.translate("MainWindow", u"0 cambios encontrados", None))
         self.groupBoxDetalle.setTitle(QCoreApplication.translate("MainWindow", u"Detalle del cambio", None))

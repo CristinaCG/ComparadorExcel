@@ -6,37 +6,9 @@ from PySide6.QtCore import (
 
 from PySide6.QtGui import (
     QColor,
-    QPalette,
 )
 
-from PySide6.QtWidgets import QApplication
-
-
-def _mezclar_color(
-    color_base,
-    color_cambio,
-    porcentaje,
-):
-    """
-    Mezcla un color de fondo con un color indicador.
-    """
-
-    r = int(
-        color_base.red() * (1 - porcentaje)
-        + color_cambio.red() * porcentaje
-    )
-
-    g = int(
-        color_base.green() * (1 - porcentaje)
-        + color_cambio.green() * porcentaje
-    )
-
-    b = int(
-        color_base.blue() * (1 - porcentaje)
-        + color_cambio.blue() * porcentaje
-    )
-
-    return QColor(r, g, b)
+from src.ui.modelo_cambios import _obtener_colores_cambio
 
 
 class ModeloHistorico(QAbstractTableModel):
@@ -101,40 +73,17 @@ class ModeloHistorico(QAbstractTableModel):
             return str(valor)
 
         # =========================================================
-        # COLOR DE FONDO
+        # ESTILOS DE COLOR DE FONDO Y TEXTO
         # =========================================================
 
-        if role == Qt.ItemDataRole.BackgroundRole:
+        if role in (Qt.ItemDataRole.BackgroundRole, Qt.ItemDataRole.ForegroundRole):
+            fondo, texto = _obtener_colores_cambio(cambio["tipo"])
 
-            paleta = QApplication.palette()
+            if role == Qt.ItemDataRole.BackgroundRole:
+                return fondo
 
-            fondo = paleta.color(
-                QPalette.ColorRole.Base
-            )
-
-            if cambio["tipo"] == "NUEVO":
-
-                return _mezclar_color(
-                    fondo,
-                    QColor(80, 180, 80),
-                    0.18,
-                )
-
-            if cambio["tipo"] == "ELIMINADO":
-
-                return _mezclar_color(
-                    fondo,
-                    QColor(220, 80, 80),
-                    0.18,
-                )
-
-            if cambio["tipo"] == "MODIFICADO":
-
-                return _mezclar_color(
-                    fondo,
-                    QColor(230, 190, 50),
-                    0.22,
-                )
+            if role == Qt.ItemDataRole.ForegroundRole:
+                return texto
 
         return None
 

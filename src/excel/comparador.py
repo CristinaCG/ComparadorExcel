@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+import numpy as np
 import pandas as pd
 
 from src.excel.claves import crear_clave
@@ -55,62 +56,45 @@ def comparar_dataframes(
     columnas_comparar: list[str],
 ) -> list[Cambio]:
     """
-    Compara dos DataFrames utilizando una o varias columnas como clave.
-
-    Los registros NUEVOS y ELIMINADOS generan un único Cambio
-    por registro.
-
-    Los registros MODIFICADOS generan un Cambio por cada
-    columna cuyo valor haya cambiado.
+    Compara dos DataFrames utilizando una o varias columnas como clave
+    mediante operaciones vectorizadas con pandas para alto rendimiento.
     """
 
     # ---------------------------------------------------------
     # VALIDACIÓN DE COLUMNAS
     # ---------------------------------------------------------
 
-    if not columnas_clave:
-        raise ValueError(
-            "Debe seleccionarse al menos una columna clave."
-        )
-
-    columnas_faltantes_anterior = (
-        _buscar_columnas_faltantes(
+    if columnas_clave:
+        columnas_faltantes_anterior = _buscar_columnas_faltantes(
             anterior,
             columnas_clave,
         )
-    )
 
-    columnas_faltantes_nuevo = (
-        _buscar_columnas_faltantes(
+        columnas_faltantes_nuevo = _buscar_columnas_faltantes(
             nuevo,
             columnas_clave,
         )
+
+        if columnas_faltantes_anterior:
+            raise ColumnaNoEncontradaError(
+                "Columnas clave inexistentes en el Excel anterior: "
+                f"{columnas_faltantes_anterior}"
+            )
+
+        if columnas_faltantes_nuevo:
+            raise ColumnaNoEncontradaError(
+                "Columnas clave inexistentes en el Excel nuevo: "
+                f"{columnas_faltantes_nuevo}"
+            )
+
+    columnas_faltantes_comparar_anterior = _buscar_columnas_faltantes(
+        anterior,
+        columnas_comparar,
     )
 
-    if columnas_faltantes_anterior:
-        raise ColumnaNoEncontradaError(
-            "Columnas clave inexistentes en el Excel anterior: "
-            f"{columnas_faltantes_anterior}"
-        )
-
-    if columnas_faltantes_nuevo:
-        raise ColumnaNoEncontradaError(
-            "Columnas clave inexistentes en el Excel nuevo: "
-            f"{columnas_faltantes_nuevo}"
-        )
-
-    columnas_faltantes_comparar_anterior = (
-        _buscar_columnas_faltantes(
-            anterior,
-            columnas_comparar,
-        )
-    )
-
-    columnas_faltantes_comparar_nuevo = (
-        _buscar_columnas_faltantes(
-            nuevo,
-            columnas_comparar,
-        )
+    columnas_faltantes_comparar_nuevo = _buscar_columnas_faltantes(
+        nuevo,
+        columnas_comparar,
     )
 
     if columnas_faltantes_comparar_anterior:
@@ -126,79 +110,55 @@ def comparar_dataframes(
         )
 
     # ---------------------------------------------------------
-    # COPIAS
-    # ---------------------------------------------------------
-
-    anterior = anterior.copy()
-    nuevo = nuevo.copy()
-
-    # ---------------------------------------------------------
     # CREAR CLAVES
     # ---------------------------------------------------------
 
-    clave_anterior = crear_clave(
-        anterior,
-        columnas_clave,
-    )
+    if columnas_clave:
+        clave_anterior = crear_clave(
+            anterior,
+            columnas_clave,
+        )
 
-    clave_nuevo = crear_clave(
-        nuevo,
-        columnas_clave,
-    )
+        clave_nuevo = crear_clave(
+            nuevo,
+            columnas_clave,
+        )
 
-    # ---------------------------------------------------------
-    # COMPROBAR CLAVES DUPLICADAS
-    # ---------------------------------------------------------
+        _validar_claves_unicas(
+            clave_anterior,
+            "Excel anterior",
+        )
 
-    _validar_claves_unicas(
-        clave_anterior,
-        "Excel anterior",
-    )
+        _validar_claves_unicas(
+            clave_nuevo,
+            "Excel nuevo",
+        )
+    else:
+        # Comparación línea a línea por posición de fila
+        clave_anterior = pd.Series([f"Fila {i + 1}" for i in range(len(anterior))], index=anterior.index)
+        clave_nuevo = pd.Series([f"Fila {i + 1}" for i in range(len(nuevo))], index=nuevo.index)
 
-    _validar_claves_unicas(
-        clave_nuevo,
-        "Excel nuevo",
-    )
+    # Indexar dataframes por la clave de comparación
+    df_ant = anterior[columnas_comparar].copy()
+    df_ant.index = clave_anterior
 
-    anterior["_clave_comparacion"] = clave_anterior
-    nuevo["_clave_comparacion"] = clave_nuevo
+    df_nue = nuevo[columnas_comparar].copy()
+    df_nue.index = clave_nuevo
 
-    # ---------------------------------------------------------
-    # OBTENER CONJUNTOS DE CLAVES
-    # ---------------------------------------------------------
-
-    claves_anterior = set(
-        anterior["_clave_comparacion"]
-    )
-
-    claves_nuevo = set(
-        nuevo["_clave_comparacion"]
-    )
+    claves_anterior = set(df_ant.index)
+    claves_nuevo = set(df_nue.index)
 
     claves_nuevas = claves_nuevo - claves_anterior
     claves_eliminadas = claves_anterior - claves_nuevo
-    claves_comunes = claves_anterior & claves_nuevo
+    claves_comunes = sorted(list(claves_anterior & claves_nuevo))
 
     cambios: list[Cambio] = []
 
     # ---------------------------------------------------------
-    # INDEXAR REGISTROS
-    # ---------------------------------------------------------
-
-    nuevo_indexado = nuevo.set_index(
-        "_clave_comparacion"
-    )
-
-    anterior_indexado = anterior.set_index(
-        "_clave_comparacion"
-    )
-
-    # ---------------------------------------------------------
-    # REGISTROS NUEVOS
+    # REGISTROS NUEVOS Y ELIMINADOS
     # ---------------------------------------------------------
 
     for clave in sorted(claves_nuevas):
-
         cambios.append(
             Cambio(
                 clave=clave,
@@ -209,12 +169,7 @@ def comparar_dataframes(
             )
         )
 
-    # ---------------------------------------------------------
-    # REGISTROS ELIMINADOS
-    # ---------------------------------------------------------
-
     for clave in sorted(claves_eliminadas):
-
         cambios.append(
             Cambio(
                 clave=clave,
@@ -225,31 +180,45 @@ def comparar_dataframes(
             )
         )
 
+    if not claves_comunes:
+        return cambios
+
     # ---------------------------------------------------------
-    # REGISTROS EXISTENTES
+    # COMPARACIÓN VECTORIZADA DE REGISTROS COMUNES
     # ---------------------------------------------------------
 
-    for clave in sorted(claves_comunes):
+    sub_ant = df_ant.loc[claves_comunes]
+    sub_nue = df_nue.loc[claves_comunes]
 
-        fila_anterior = anterior_indexado.loc[clave]
-        fila_nueva = nuevo_indexado.loc[clave]
+    for columna in columnas_comparar:
+        s_ant = sub_ant[columna]
+        s_nue = sub_nue[columna]
 
-        for columna in columnas_comparar:
+        # Máscara vectorizada de valores diferentes
+        # Nulos equivalentes
+        nulos_ant = s_ant.isna()
+        nulos_nue = s_nue.isna()
 
-            valor_1 = fila_anterior[columna]
-            valor_2 = fila_nueva[columna]
+        diferentes = ~((nulos_ant & nulos_nue) | (s_ant == s_nue))
 
-            if not _valores_iguales(
-                valor_1,
-                valor_2,
-            ):
+        # Tratar comparaciones numéricas equivalentes (ej: 10 y 10.0)
+        idx_evaluar = s_ant.index[diferentes]
+
+        if len(idx_evaluar) == 0:
+            continue
+
+        v_ant = s_ant.loc[idx_evaluar]
+        v_nue = s_nue.loc[idx_evaluar]
+
+        for clave_idx, val1, val2 in zip(idx_evaluar, v_ant, v_nue):
+            if not _valores_iguales(val1, val2):
                 cambios.append(
                     Cambio(
-                        clave=clave,
+                        clave=str(clave_idx),
                         tipo="MODIFICADO",
                         columna=columna,
-                        valor_1=valor_1,
-                        valor_2=valor_2,
+                        valor_1=val1,
+                        valor_2=val2,
                     )
                 )
 
@@ -296,34 +265,23 @@ def _valores_iguales(
 ) -> bool:
     """
     Compara dos valores teniendo en cuenta:
-
     - valores nulos
     - números enteros y decimales
     - fechas
-    - textos
+    - textos (normalizando espacios en blanco)
     """
 
     anterior_es_nulo = pd.isna(valor_1)
     nuevo_es_nulo = pd.isna(valor_2)
 
-    # Ambos están vacíos
     if anterior_es_nulo and nuevo_es_nulo:
         return True
 
-    # Sólo uno está vacío
     if anterior_es_nulo or nuevo_es_nulo:
         return False
 
-    # ---------------------------------------------------------
-    # NÚMEROS
-    # ---------------------------------------------------------
-
     if _es_numero(valor_1) and _es_numero(valor_2):
         return float(valor_1) == float(valor_2)
-
-    # ---------------------------------------------------------
-    # FECHAS
-    # ---------------------------------------------------------
 
     if isinstance(
         valor_1,
@@ -334,9 +292,9 @@ def _valores_iguales(
     ):
         return valor_1 == valor_2
 
-    # ---------------------------------------------------------
-    # RESTO DE VALORES
-    # ---------------------------------------------------------
+    # Para cadenas de texto, normalizar eliminando espacios iniciales/finales
+    if isinstance(valor_1, str) and isinstance(valor_2, str):
+        return valor_1.strip() == valor_2.strip()
 
     return valor_1 == valor_2
 
@@ -348,7 +306,7 @@ def _es_numero(valor: object) -> bool:
 
     return isinstance(
         valor,
-        (int, float, complex),
+        (int, float, complex, np.number),
     ) and not isinstance(
         valor,
         bool,

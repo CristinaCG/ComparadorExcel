@@ -50,6 +50,7 @@ def obtener_hojas(
 def leer_excel(
     ruta: str,
     nombre_hoja: str | None = None,
+    columnas: list[str] | None = None,
 ) -> pd.DataFrame:
     """
     Lee una hoja de un archivo Excel.
@@ -65,6 +66,9 @@ def leer_excel(
         Nombre de la hoja que se quiere leer.
         Si es None, se lee la primera hoja.
 
+    columnas:
+        Lista de columnas específicas a leer. Si es None, se leen todas.
+
     Returns
     -------
     pd.DataFrame
@@ -79,4 +83,6 @@ def leer_excel(
     return pd.read_excel(
         archivo,
         sheet_name=nombre_hoja,
+        usecols=columnas,
+        engine="openpyxl" if archivo.suffix.lower() == ".xlsx" else None,
     )

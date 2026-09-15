@@ -6,37 +6,52 @@ from PySide6.QtCore import (
 
 from PySide6.QtGui import (
     QColor,
-    QPalette,
 )
 
 from PySide6.QtWidgets import QApplication
 
+_ES_TEMA_OSCURO_CACHE = None
 
-def _mezclar_color(
-    color_base,
-    color_cambio,
-    porcentaje,
-):
-    """
-    Mezcla un color de fondo con un color indicador.
-    """
 
-    r = int(
-        color_base.red() * (1 - porcentaje)
-        + color_cambio.red() * porcentaje
-    )
+def invalidar_cache_tema():
+    global _ES_TEMA_OSCURO_CACHE
+    _ES_TEMA_OSCURO_CACHE = None
 
-    g = int(
-        color_base.green() * (1 - porcentaje)
-        + color_cambio.green() * porcentaje
-    )
 
-    b = int(
-        color_base.blue() * (1 - porcentaje)
-        + color_cambio.blue() * porcentaje
-    )
+def _es_tema_oscuro() -> bool:
+    global _ES_TEMA_OSCURO_CACHE
 
-    return QColor(r, g, b)
+    if _ES_TEMA_OSCURO_CACHE is not None:
+        return _ES_TEMA_OSCURO_CACHE
+
+    app = QApplication.instance()
+
+    if app and hasattr(app, "styleSheet"):
+        qss = app.styleSheet()
+        _ES_TEMA_OSCURO_CACHE = "#0F172A" in qss
+
+        return _ES_TEMA_OSCURO_CACHE
+
+    return False
+
+
+def _obtener_colores_cambio(tipo: str):
+    if _es_tema_oscuro():
+        if tipo == "NUEVO":
+            return QColor(20, 60, 30), QColor(140, 230, 160)
+        if tipo == "ELIMINADO":
+            return QColor(70, 25, 25), QColor(255, 160, 160)
+        if tipo == "MODIFICADO":
+            return QColor(65, 50, 15), QColor(255, 220, 130)
+    else:
+        if tipo == "NUEVO":
+            return QColor("#C3FAC4"), QColor("#1A2530")
+        if tipo == "ELIMINADO":
+            return QColor("#FF746C"), QColor("#FFFFFF")
+        if tipo == "MODIFICADO":
+            return QColor("#FFEE8C"), QColor("#1A2530")
+
+    return None, None
 
 
 class ModeloCambios(QAbstractTableModel):
@@ -92,40 +107,17 @@ class ModeloCambios(QAbstractTableModel):
             return str(valor)
 
         # =========================================================
-        # COLOR DE FONDO
+        # ESTILOS DE COLOR DE FONDO Y TEXTO
         # =========================================================
 
-        if role == Qt.ItemDataRole.BackgroundRole:
+        if role in (Qt.ItemDataRole.BackgroundRole, Qt.ItemDataRole.ForegroundRole):
+            fondo, texto = _obtener_colores_cambio(cambio.tipo)
 
-            paleta = QApplication.palette()
+            if role == Qt.ItemDataRole.BackgroundRole:
+                return fondo
 
-            fondo = paleta.color(
-                QPalette.ColorRole.Base
-            )
-
-            if cambio.tipo == "NUEVO":
-
-                return _mezclar_color(
-                    fondo,
-                    QColor(80, 180, 80),
-                    0.18,
-                )
-
-            if cambio.tipo == "ELIMINADO":
-
-                return _mezclar_color(
-                    fondo,
-                    QColor(220, 80, 80),
-                    0.18,
-                )
-
-            if cambio.tipo == "MODIFICADO":
-
-                return _mezclar_color(
-                    fondo,
-                    QColor(230, 190, 50),
-                    0.22,
-                )
+            if role == Qt.ItemDataRole.ForegroundRole:
+                return texto
 
         return None
 
@@ -160,10 +152,6 @@ class ModeloCambios(QAbstractTableModel):
         self,
         fila: int,
     ):
-        """
-        Devuelve el objeto Cambio correspondiente
-        a una fila del modelo.
-        """
 
         if fila < 0 or fila >= len(self.cambios):
             return None

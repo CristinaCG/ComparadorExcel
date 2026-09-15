@@ -3,7 +3,7 @@ Módulo de gestión de temas y hojas de estilo (QSS) para la aplicación.
 """
 
 TEMA_PINE_CLARO = """
-QMainWindow, QDialog {
+QMainWindow, QDialog, QFilterPopup {
     background-color: #F4F6F9;
     color: #1A2530;
 }
@@ -60,8 +60,8 @@ QGroupBox::title {
     color: #0F4C81;
 }
 
-/* Push Buttons */
-QPushButton {
+/* Push Buttons y Tool Buttons */
+QPushButton, QToolButton {
     background-color: #106EBE;
     color: #FFFFFF;
     border: none;
@@ -70,29 +70,31 @@ QPushButton {
     font-weight: 600;
 }
 
-QPushButton:hover {
+QPushButton:hover, QToolButton:hover {
     background-color: #005A9E;
+    color: #FFFFFF;
 }
 
-QPushButton:pressed {
+QPushButton:pressed, QToolButton:pressed {
     background-color: #004578;
+    color: #FFFFFF;
 }
 
-QPushButton:disabled {
+QPushButton:disabled, QToolButton:disabled {
     background-color: #C8D1DA;
     color: #8A9BA8;
 }
 
-/* LineEdit, ComboBox, TextEdit */
-QLineEdit, QComboBox, QTextEdit, QListWidget {
-    background-color: #F8FAFC;
+/* LineEdit, ComboBox, TextEdit, ListWidget y ListView */
+QLineEdit, QComboBox, QTextEdit, QListWidget, QListView {
+    background-color: #FFFFFF;
     border: 1px solid #C5D1DE;
     border-radius: 6px;
     padding: 5px 8px;
     color: #1A2530;
 }
 
-QLineEdit:focus, QComboBox:focus, QTextEdit:focus, QListWidget:focus {
+QLineEdit:focus, QComboBox:focus, QTextEdit:focus, QListWidget:focus, QListView:focus {
     border: 2px solid #106EBE;
     background-color: #FFFFFF;
 }
@@ -102,12 +104,49 @@ QComboBox::drop-down {
     padding-right: 8px;
 }
 
-QComboBox QAbstractItemView {
+QComboBox QAbstractItemView, QMenu, QMenu::item, QFilterPopup QListView {
     background-color: #FFFFFF;
     color: #1A2530;
     selection-background-color: #106EBE;
     selection-color: #FFFFFF;
     border: 1px solid #C5D1DE;
+}
+
+/* Filter Popup específico (qextrawidgets QFilterPopup) */
+QFilterPopup {
+    background-color: #FFFFFF;
+    color: #1A2530;
+    border: 1px solid #C5D1DE;
+    border-radius: 6px;
+}
+
+QFilterPopup QToolButton {
+    background-color: transparent;
+    color: #106EBE;
+    border: none;
+    text-align: left;
+    padding: 4px 8px;
+}
+
+QFilterPopup QToolButton:hover {
+    background-color: #EBF0F5;
+    color: #005A9E;
+}
+
+QFilterPopup QCheckBox {
+    color: #1A2530;
+}
+
+QMenu {
+    background-color: #FFFFFF;
+    color: #1A2530;
+    border: 1px solid #C5D1DE;
+    padding: 4px;
+}
+
+QMenu::item:selected {
+    background-color: #106EBE;
+    color: #FFFFFF;
 }
 
 /* QTableView */
@@ -145,7 +184,7 @@ QStatusBar {
 """
 
 TEMA_PINE_OSCURO = """
-QMainWindow, QDialog {
+QMainWindow, QDialog, QFilterPopup {
     background-color: #0F172A;
     color: #F1F5F9;
 }
@@ -225,8 +264,8 @@ QPushButton:disabled {
     color: #64748B;
 }
 
-/* LineEdit, ComboBox, TextEdit */
-QLineEdit, QComboBox, QTextEdit, QListWidget {
+/* LineEdit, ComboBox, TextEdit, ListWidget, ListView */
+QLineEdit, QComboBox, QTextEdit, QListWidget, QListView {
     background-color: #1E293B;
     border: 1px solid #334155;
     border-radius: 6px;
@@ -234,7 +273,7 @@ QLineEdit, QComboBox, QTextEdit, QListWidget {
     color: #F8FAFC;
 }
 
-QLineEdit:focus, QComboBox:focus, QTextEdit:focus, QListWidget:focus {
+QLineEdit:focus, QComboBox:focus, QTextEdit:focus, QListWidget:focus, QListView:focus {
     border: 2px solid #38BDF8;
     background-color: #1E293B;
 }
@@ -244,12 +283,48 @@ QComboBox::drop-down {
     padding-right: 8px;
 }
 
-QComboBox QAbstractItemView {
+QComboBox QAbstractItemView, QFilterPopup QListView {
     background-color: #1E293B;
     color: #F8FAFC;
     selection-background-color: #0284C7;
     selection-color: #FFFFFF;
     border: 1px solid #334155;
+}
+
+/* Filter Popup específico (qextrawidgets QFilterPopup) */
+QFilterPopup {
+    background-color: #1E293B;
+    color: #F8FAFC;
+    border: 1px solid #334155;
+    border-radius: 6px;
+}
+
+QFilterPopup QToolButton {
+    background-color: transparent;
+    color: #38BDF8;
+    border: none;
+    text-align: left;
+    padding: 4px 8px;
+}
+
+QFilterPopup QToolButton:hover {
+    background-color: #0F172A;
+    color: #38BDF8;
+}
+
+QFilterPopup QCheckBox {
+    color: #F8FAFC;
+}
+
+QMenu, QMenu::item {
+    background-color: #1E293B;
+    color: #F8FAFC;
+    border: 1px solid #334155;
+}
+
+QMenu::item:selected {
+    background-color: #0284C7;
+    color: #FFFFFF;
 }
 
 /* QTableView */
@@ -287,7 +362,7 @@ QStatusBar {
 """
 
 TEMA_JULES_MORADO = """
-QMainWindow, QDialog {
+QMainWindow, QDialog, QFilterPopup {
     background-color: #F6F3FA;
     color: #2D1B4E;
 }
@@ -367,16 +442,16 @@ QPushButton:disabled {
     color: #9575CD;
 }
 
-/* LineEdit, ComboBox, TextEdit */
-QLineEdit, QComboBox, QTextEdit, QListWidget {
-    background-color: #FAFAF8;
+/* LineEdit, ComboBox, TextEdit, ListWidget, ListView */
+QLineEdit, QComboBox, QTextEdit, QListWidget, QListView {
+    background-color: #FFFFFF;
     border: 1px solid #D1C4E9;
     border-radius: 6px;
     padding: 5px 8px;
     color: #2D1B4E;
 }
 
-QLineEdit:focus, QComboBox:focus, QTextEdit:focus, QListWidget:focus {
+QLineEdit:focus, QComboBox:focus, QTextEdit:focus, QListWidget:focus, QListView:focus {
     border: 2px solid #7C4DFF;
     background-color: #FFFFFF;
 }
@@ -386,12 +461,48 @@ QComboBox::drop-down {
     padding-right: 8px;
 }
 
-QComboBox QAbstractItemView {
+QComboBox QAbstractItemView, QFilterPopup QListView {
     background-color: #FFFFFF;
     color: #2D1B4E;
     selection-background-color: #7C4DFF;
     selection-color: #FFFFFF;
     border: 1px solid #D1C4E9;
+}
+
+/* Filter Popup específico (qextrawidgets QFilterPopup) */
+QFilterPopup {
+    background-color: #FFFFFF;
+    color: #2D1B4E;
+    border: 1px solid #D1C4E9;
+    border-radius: 6px;
+}
+
+QFilterPopup QToolButton {
+    background-color: transparent;
+    color: #7C4DFF;
+    border: none;
+    text-align: left;
+    padding: 4px 8px;
+}
+
+QFilterPopup QToolButton:hover {
+    background-color: #EDE7F6;
+    color: #6200EA;
+}
+
+QFilterPopup QCheckBox {
+    color: #2D1B4E;
+}
+
+QMenu, QMenu::item {
+    background-color: #FFFFFF;
+    color: #2D1B4E;
+    border: 1px solid #D1C4E9;
+}
+
+QMenu::item:selected {
+    background-color: #7C4DFF;
+    color: #FFFFFF;
 }
 
 /* QTableView */

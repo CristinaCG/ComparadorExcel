@@ -24,9 +24,13 @@ from PySide6.QtWidgets import (
     QComboBox,
     QApplication,
     QHeaderView,
+    QProgressDialog,
 )
 
+from PySide6.QtCore import QThread, Signal
+
 from src.ui.themes import TEMAS
+from src.ui.modelo_cambios import invalidar_cache_tema
 
 from src.database.repositorio import RepositorioSQLite
 
@@ -155,13 +159,21 @@ class MainWindow(QMainWindow):
 
             <hr style="border: 0; height: 1px; background: #DCE3EC; margin: 15px 0;">
 
-            <h3 style="color: #0F4C81;">🚀 Pasos para Realizar una Comparación</h3>
+            <h3 style="color: #0F4C81;">🚀 Comparación Individual (2 archivos)</h3>
             <ol style="line-height: 1.6;">
-                <li><b>Pestaña "Comparar":</b> Selecciona el <b>Excel 1</b> (versión anterior) y el <b>Excel 2</b> (versión nueva) usando los botones "Seleccionar".</li>
+                <li><b>Pestaña "Comparación individual":</b> Selecciona el <b>Excel 1</b> (versión anterior) y el <b>Excel 2</b> (versión nueva).</li>
                 <li><b>Hojas de cálculo:</b> Selecciona la hoja correspondiente para cada archivo.</li>
                 <li><b>Columnas clave:</b> Marca las columnas que identifican únicamente cada registro (por ejemplo: <i>Código, ID de Cable, Tag</i>).</li>
                 <li><b>Columnas a comparar:</b> Selecciona las columnas cuyos valores deseas inspeccionar en búsqueda de diferencias.</li>
-                <li><b>Comparar:</b> Haz clic en el botón <b>"Comparar archivos"</b> para ver los resultados automáticamente.</li>
+                <li><b>Comparar:</b> Haz clic en <b>"Comparar archivos"</b> para ver los resultados inmediatamente.</li>
+            </ol>
+
+            <h3 style="color: #0F4C81;">📦 Comparación Múltiple / Lote (Secuencial)</h3>
+            <ol style="line-height: 1.6;">
+                <li><b>Pestaña "Comparación múltiple":</b> Haz clic en <b>"Agregar archivos"</b> para cargar un grupo de archivos Excel organizados cronológicamente o por versiones.</li>
+                <li><b>Reordenar secuencia:</b> Usa los botones ⬆/⬇ para asegurarte de que estén en el orden correcto (ej. <i>Versión 1 → Versión 2 → Versión 3</i>).</li>
+                <li><b>Configuración común:</b> Selecciona la hoja común a comparar, las columnas clave y las columnas a evaluar.</li>
+                <li><b>Procesar:</b> Haz clic en <b>"Procesar secuencialmente y crear histórico"</b> para generar automáticamente la base de datos de histórico con todas las comparaciones por parejas.</li>
             </ol>
 
             <h3 style="color: #0F4C81;">💾 Guardar e Histórico</h3>
@@ -240,6 +252,8 @@ class MainWindow(QMainWindow):
             if app:
                 app.setStyleSheet(TEMAS[nombre_tema])
 
+            invalidar_cache_tema()
+
             self.repositorio_configuracion.guardar_preferencia(
                 "tema",
                 nombre_tema,
@@ -280,6 +294,7 @@ class MainWindow(QMainWindow):
 
         iconos = [
             "fa5s.balance-scale",
+            "fa5s.layer-group",
             "fa5s.poll",
             "fa5s.history",
             "fa5s.question-circle",
@@ -311,6 +326,13 @@ class MainWindow(QMainWindow):
             self.ui.pushButtonAbrirHistorico.setIcon(qta.icon("fa5s.folder-open", color="#FFFFFF"))
             self.ui.pushButtonEliminarComparacion.setIcon(qta.icon("fa5s.trash-alt", color="#FFFFFF"))
             self.ui.pushButtonExportarHistorico.setIcon(qta.icon("fa5s.file-export", color="#FFFFFF"))
+
+            # Botones de comparación múltiple
+            self.ui.pushButtonAgregarArchivosMultiples.setIcon(qta.icon("fa5s.file-medical", color="#FFFFFF"))
+            self.ui.pushButtonQuitarArchivoMultiple.setIcon(qta.icon("fa5s.minus-circle", color="#FFFFFF"))
+            self.ui.pushButtonSubirArchivoMultiple.setIcon(qta.icon("fa5s.arrow-up", color="#FFFFFF"))
+            self.ui.pushButtonBajarArchivoMultiple.setIcon(qta.icon("fa5s.arrow-down", color="#FFFFFF"))
+            self.ui.pushButtonCompararMultiple.setIcon(qta.icon("fa5s.cogs", color="#FFFFFF"))
 
         except Exception:
             pass
@@ -376,6 +398,45 @@ class MainWindow(QMainWindow):
             self.exportar_historico_excel
         )
 
+        # Eventos comparación múltiple
+        self.ui.pushButtonAgregarArchivosMultiples.clicked.connect(
+            self.agregar_archivos_multiples
+        )
+
+        self.ui.pushButtonQuitarArchivoMultiple.clicked.connect(
+            self.quitar_archivo_multiple
+        )
+
+        self.ui.pushButtonSubirArchivoMultiple.clicked.connect(
+            self.subir_archivo_multiple
+        )
+
+        self.ui.pushButtonBajarArchivoMultiple.clicked.connect(
+            self.bajar_archivo_multiple
+        )
+
+        self.ui.comboBoxHojaMultiple.currentTextChanged.connect(
+            self.cargar_hoja_multiple
+        )
+
+        self.ui.lineEditBuscarClaveMultiple.textChanged.connect(
+            lambda texto: self._filtrar_lista(
+                self.ui.listaColumnasClaveMultiple,
+                texto,
+            )
+        )
+
+        self.ui.lineEditBuscarCompararMultiple.textChanged.connect(
+            lambda texto: self._filtrar_lista(
+                self.ui.listaColumnasCompararMultiple,
+                texto,
+            )
+        )
+
+        self.ui.pushButtonCompararMultiple.clicked.connect(
+            self.procesar_comparacion_multiple
+        )
+
     def _filtrar_lista(
         self,
         lista,
@@ -403,49 +464,24 @@ class MainWindow(QMainWindow):
         mostrar_anterior: bool,
     ) -> str:
         """
-        Genera HTML resaltando con fondo amarillo suave las partes
-        diferentes entre el valor anterior y el nuevo.
-
-        El color se adapta al tema claro/oscuro de Qt.
+        Genera HTML resaltando las partes diferentes entre el valor anterior
+        y el nuevo utilizando el mismo color que la fila MODIFICADO según el tema.
         """
 
         # ---------------------------------------------------------
-        # Color de resaltado según el tema
+        # Color de resaltado idéntico al color MODIFICADO del tema
         # ---------------------------------------------------------
 
-        from PySide6.QtWidgets import QApplication
-        from PySide6.QtGui import QPalette
+        from src.ui.modelo_cambios import _obtener_colores_cambio
 
-        paleta = QApplication.palette()
+        fondo_mod, texto_mod = _obtener_colores_cambio("MODIFICADO")
 
-        fondo = paleta.color(
-            QPalette.ColorRole.Base
-        )
-
-        # Amarillo de referencia
-        amarillo = (220, 180, 40)
-
-        # En función del fondo actual hacemos una mezcla
-        porcentaje = 0.35
-
-        rojo = int(
-            fondo.red() * (1 - porcentaje)
-            + amarillo[0] * porcentaje
-        )
-
-        verde = int(
-            fondo.green() * (1 - porcentaje)
-            + amarillo[1] * porcentaje
-        )
-
-        azul = int(
-            fondo.blue() * (1 - porcentaje)
-            + amarillo[2] * porcentaje
-        )
-
-        color_resaltado = (
-            f"rgb({rojo},{verde},{azul})"
-        )
+        if fondo_mod:
+            color_resaltado = fondo_mod.name()
+            color_texto = texto_mod.name() if texto_mod else "#000000"
+        else:
+            color_resaltado = "#FFEE8C"
+            color_texto = "#1A2530"
 
         # ---------------------------------------------------------
         # Comparar textos
@@ -488,7 +524,7 @@ class MainWindow(QMainWindow):
             if etiqueta != "equal":
 
                 texto = (
-                    f'<span style="background-color: {color_resaltado};">'
+                    f'<span style="background-color: {color_resaltado}; color: {color_texto}; font-weight: bold;">'
                     f"{texto}"
                     "</span>"
                 )
@@ -537,7 +573,7 @@ class MainWindow(QMainWindow):
         html_nuevo = self._texto_con_diferencias(
             texto_anterior,
             texto_nuevo,
-            True,
+            False,
         )
 
         edit1.setHtml(html_anterior)
@@ -1030,19 +1066,6 @@ class MainWindow(QMainWindow):
             columnas_comparadas=columnas_comparar,
         )
 
-        # ---------------------------------------------------------
-        # Validar clave
-        # ---------------------------------------------------------
-
-        if not columnas_clave:
-
-            QMessageBox.warning(
-                self,
-                "Falta la clave",
-                "Selecciona al menos una columna clave.",
-            )
-
-            return
 
         # ---------------------------------------------------------
         # Validar columnas a comparar
@@ -1059,49 +1082,59 @@ class MainWindow(QMainWindow):
             return
 
         # ---------------------------------------------------------
-        # Ejecutar comparación
+        # Ejecutar comparación en segundo plano con diálogo de progreso
         # ---------------------------------------------------------
 
-        try:
+        from src.excel.comparador import comparar_dataframes
 
-            from src.excel.comparador import comparar_dataframes
+        dialogo = QProgressDialog("Comparando archivos...", None, 0, 0, self)
+        dialogo.setWindowTitle("Procesando")
+        dialogo.setCancelButton(None)
+        dialogo.setModal(True)
+        dialogo.show()
 
-            cambios = comparar_dataframes(
-                self.df_1,
-                self.df_2,
-                columnas_clave=columnas_clave,
-                columnas_comparar=columnas_comparar,
-            )
+        class WorkerComparar(QThread):
+            terminado = Signal(object, object)
 
-        except Exception as error:
+            def __init__(self, df1, df2, claves, comparar):
+                super().__init__()
+                self.df1 = df1
+                self.df2 = df2
+                self.claves = claves
+                self.comparar = comparar
 
-            QMessageBox.critical(
-                self,
-                "Error durante la comparación",
-                f"No se ha podido comparar los archivos:\n\n{error}",
-            )
+            def run(self):
+                try:
+                    res = comparar_dataframes(
+                        self.df1,
+                        self.df2,
+                        columnas_clave=self.claves,
+                        columnas_comparar=self.comparar,
+                    )
+                    self.terminado.emit(res, None)
+                except Exception as ex:
+                    self.terminado.emit(None, ex)
 
-            return
+        self.worker = WorkerComparar(self.df_1, self.df_2, columnas_clave, columnas_comparar)
 
-        # ---------------------------------------------------------
-        # Mostrar resultados
-        # ---------------------------------------------------------
+        def _al_terminar(cambios, error):
+            dialogo.close()
+            if error:
+                QMessageBox.critical(
+                    self,
+                    "Error durante la comparación",
+                    f"No se ha podido comparar los archivos:\n\n{error}",
+                )
+                return
 
-        self.modelo_cambios.actualizar(cambios)
+            self.modelo_cambios.actualizar(cambios)
+            self.ui.tabWidget.setCurrentWidget(self.ui.tab_resultados)
+            self.ui.labelResumen.setText(f"{len(cambios)} cambios encontrados")
+            self.ui.tableViewCambios.resizeColumnsToContents()
+            self.ui.statusBar.showMessage("Comparación completada correctamente.")
 
-        self.ui.tabWidget.setCurrentWidget(
-            self.ui.tab_resultados
-        )
-        self.ui.labelResumen.setText(
-            f"{len(cambios)} cambios encontrados"
-        )
-
-        # Ajustar columnas
-        self.ui.tableViewCambios.resizeColumnsToContents()
-
-        self.ui.statusBar.showMessage(
-            "Comparación completada correctamente."
-        )
+        self.worker.terminado.connect(_al_terminar)
+        self.worker.start()
 
     def _obtener_fila_modelo_origen(self, index):
         """
@@ -1443,52 +1476,44 @@ class MainWindow(QMainWindow):
 
     def exportar_historico_excel(self):
         """
-        Exporta a Excel exactamente los registros que se están
-        mostrando actualmente en la tabla del histórico.
-
-        Respeta:
-        - filtros aplicados
-        - orden de las filas
-        - columnas visibles
+        Exporta a Excel TODOS los registros del histórico
+        que coincidan con el filtro actual directamente desde la base de datos (sin límite de visualización UI).
         """
 
-        tabla = self.ui.tableViewHistorico
-
-        # =========================================================
-        # OBTENER EL PROXY REAL DE FILTRADO
-        # =========================================================
-
-        modelo = tabla._filter_proxy
-
-        if modelo is None:
-
+        if not hasattr(self, "repositorio_historico") or self.repositorio_historico is None:
             QMessageBox.warning(
                 self,
                 "Sin datos",
-                "No hay datos para exportar.",
+                "Primero debes abrir una base de datos de histórico.",
             )
-
             return
 
-        # =========================================================
-        # COMPROBAR FILAS
-        # =========================================================
+        texto_clave = (
+            self.ui.lineEditBuscarClaveHistorico
+            .text()
+            .strip()
+        )
 
-        numero_filas = modelo.rowCount()
+        identificador_seleccionado = (
+            self.ui.comboBoxIdentificadorHistorico
+            .currentText()
+            .strip()
+        )
 
-        if numero_filas == 0:
+        # Consultar TODOS los registros filtrados sin límite en la base de datos
+        cambios_exportar = self.repositorio_historico.obtener_historico_cambios(
+            texto_clave=texto_clave if texto_clave else None,
+            identificador=identificador_seleccionado if identificador_seleccionado else None,
+            limite=None,
+        )
 
+        if not cambios_exportar:
             QMessageBox.warning(
                 self,
                 "Sin datos",
-                "No hay registros visibles para exportar.",
+                "No hay registros que coincidan con el filtro para exportar.",
             )
-
             return
-
-        # =========================================================
-        # ELEGIR ARCHIVO
-        # =========================================================
 
         nombre_sugerido = "Historico.xlsx"
         if hasattr(self, "ruta_historico") and self.ruta_historico:
@@ -1507,87 +1532,41 @@ class MainWindow(QMainWindow):
             return
 
         try:
-
             libro = Workbook()
-
             hoja = libro.active
-
             hoja.title = "Histórico"
 
-            # =====================================================
-            # COLUMNAS
-            # =====================================================
+            encabezados = [
+                "Identificador",
+                "Clave",
+                "Tipo",
+                "Columna",
+                "Valor 1",
+                "Valor 2",
+            ]
 
-            columnas = modelo.columnCount()
+            numero_filas = len(cambios_exportar)
 
-            columnas_exportar = []
+            # Escribir cabecera
+            for col_idx, encabezado in enumerate(encabezados, start=1):
+                celda = hoja.cell(row=1, column=col_idx, value=encabezado)
+                celda.font = Font(bold=True)
 
-            for columna in range(columnas):
-
-                # Comprobar si la columna está visible
-                if tabla.isColumnHidden(columna):
-                    continue
-
-                encabezado = modelo.headerData(
-                    columna,
-                    Qt.Orientation.Horizontal,
-                    Qt.ItemDataRole.DisplayRole,
-                )
-
-                columnas_exportar.append(
-                    (
-                        columna,
-                        encabezado,
-                    )
-                )
-
-            # =====================================================
-            # CABECERAS
-            # =====================================================
-
-            for numero_columna, (_, encabezado) in enumerate(
-                columnas_exportar,
-                start=1,
-            ):
-
-                celda = hoja.cell(
-                    row=1,
-                    column=numero_columna,
-                    value=encabezado,
-                )
-
-                celda.font = Font(
-                    bold=True
-                )
-
-            # =====================================================
-            # FILAS FILTRADAS
-            # =====================================================
-
-            for fila in range(numero_filas):
-
-                for numero_columna, (
-                    columna,
-                    _,
-                ) in enumerate(
-                    columnas_exportar,
-                    start=1,
-                ):
-
-                    indice = modelo.index(
-                        fila,
-                        columna,
-                    )
-
-                    valor = modelo.data(
-                        indice,
-                        Qt.ItemDataRole.DisplayRole,
-                    )
-
+            # Escribir datos
+            for fila_idx, cambio in enumerate(cambios_exportar, start=2):
+                valores = [
+                    cambio["identificador"],
+                    cambio["clave"],
+                    cambio["tipo"],
+                    cambio["columna"],
+                    cambio["valor_1"],
+                    cambio["valor_2"],
+                ]
+                for col_idx, valor in enumerate(valores, start=1):
                     hoja.cell(
-                        row=fila + 2,
-                        column=numero_columna,
-                        value=valor,
+                        row=fila_idx,
+                        column=col_idx,
+                        value="" if valor is None else str(valor),
                     )
 
             # =====================================================
@@ -1664,7 +1643,6 @@ class MainWindow(QMainWindow):
             self.ui.lineEditBuscarClaveHistorico
             .text()
             .strip()
-            .lower()
         )
 
         identificador_seleccionado = (
@@ -1673,41 +1651,14 @@ class MainWindow(QMainWindow):
             .strip()
         )
 
-        cambios = (
+        cambios_filtrados = (
             self.repositorio_historico
-            .obtener_historico_cambios()
+            .obtener_historico_cambios(
+                texto_clave=texto_clave if texto_clave else None,
+                identificador=identificador_seleccionado if identificador_seleccionado else None,
+                limite=10000,
+            )
         )
-
-        cambios_filtrados = []
-
-        for cambio in cambios:
-
-            clave = str(
-                cambio["clave"]
-            ).lower()
-
-            identificador = str(
-                cambio["identificador"]
-            )
-
-            coincide_clave = (
-                not texto_clave
-                or texto_clave in clave
-            )
-
-            if identificador_seleccionado == "Todos":
-                coincide_identificador = True
-            else:
-                coincide_identificador = (
-                    identificador
-                    == identificador_seleccionado
-                )
-
-            if (
-                coincide_clave
-                and coincide_identificador
-            ):
-                cambios_filtrados.append(cambio)
 
         self.modelo_historico.actualizar(
             cambios_filtrados
@@ -1836,3 +1787,372 @@ class MainWindow(QMainWindow):
         self.ui.textEditValor1Historico.clear()
         self.ui.textEditValor2Historico.clear()
 
+    # =========================================================
+    # LÓGICA DE COMPARACIÓN MÚLTIPLE / LOTE
+    # =========================================================
+
+    def agregar_archivos_multiples(self):
+        """
+        Añade múltiples archivos Excel a la lista secuencial.
+        """
+
+        rutas, _ = QFileDialog.getOpenFileNames(
+            self,
+            "Seleccionar archivos Excel para comparación múltiple",
+            "",
+            "Archivos Excel (*.xlsx *.xls)",
+        )
+
+        if not rutas:
+            return
+
+        lista = self.ui.listaArchivosMultiples
+
+        # Obtener rutas ya existentes
+        rutas_existentes = {
+            lista.item(i).text() for i in range(lista.count())
+        }
+
+        nuevas_rutas = [r for r in rutas if r not in rutas_existentes]
+
+        # Ordenar alfabéticamente las nuevas rutas
+        nuevas_rutas.sort()
+
+        for ruta in nuevas_rutas:
+            lista.addItem(ruta)
+
+        self._actualizar_hojas_multiples()
+
+    def quitar_archivo_multiple(self):
+        """
+        Elimina el archivo seleccionado de la lista múltiple.
+        """
+
+        lista = self.ui.listaArchivosMultiples
+        fila = lista.currentRow()
+
+        if fila >= 0:
+            lista.takeItem(fila)
+            self._actualizar_hojas_multiples()
+
+    def subir_archivo_multiple(self):
+        """
+        Sube una posición el archivo seleccionado.
+        """
+
+        lista = self.ui.listaArchivosMultiples
+        fila = lista.currentRow()
+
+        if fila > 0:
+            item = lista.takeItem(fila)
+            lista.insertItem(fila - 1, item)
+            lista.setCurrentRow(fila - 1)
+
+    def bajar_archivo_multiple(self):
+        """
+        Baja una posición el archivo seleccionado.
+        """
+
+        lista = self.ui.listaArchivosMultiples
+        fila = lista.currentRow()
+
+        if 0 <= fila < lista.count() - 1:
+            item = lista.takeItem(fila)
+            lista.insertItem(fila + 1, item)
+            lista.setCurrentRow(fila + 1)
+
+    def _obtener_rutas_multiples(self) -> list[str]:
+        """
+        Devuelve la lista de rutas ordenadas según la UI.
+        """
+        lista = self.ui.listaArchivosMultiples
+        return [lista.item(i).text() for i in range(lista.count())]
+
+    def _actualizar_hojas_multiples(self):
+        """
+        Obtiene las hojas comunes presentes en TODOS los Excel seleccionados.
+        """
+
+        lista = self.ui.listaArchivosMultiples
+        combo = self.ui.comboBoxHojaMultiple
+
+        combo.blockSignals(True)
+        combo.clear()
+
+        rutas = [lista.item(i).text() for i in range(lista.count())]
+
+        if not rutas:
+            combo.blockSignals(False)
+
+            self.ui.listaColumnasClaveMultiple.clear()
+            self.ui.listaColumnasCompararMultiple.clear()
+
+            return
+
+        try:
+            hojas_comunes = None
+
+            for ruta in rutas:
+                hojas = set(obtener_hojas(ruta))
+                if hojas_comunes is None:
+                    hojas_comunes = hojas
+                else:
+                    hojas_comunes &= hojas
+
+            lista_hojas = sorted(list(hojas_comunes or []))
+            combo.addItems(lista_hojas)
+            combo.blockSignals(False)
+
+            if lista_hojas:
+                self.cargar_hoja_multiple(combo.currentText())
+            else:
+                self.ui.listaColumnasClaveMultiple.clear()
+                self.ui.listaColumnasCompararMultiple.clear()
+
+        except Exception as error:
+            combo.blockSignals(False)
+            QMessageBox.critical(
+                self,
+                "Error al leer hojas comunes",
+                f"Ocurrió un error al inspeccionar las hojas:\n\n{error}",
+            )
+
+    def cargar_hoja_multiple(self, nombre_hoja: str):
+        """
+        Carga las columnas comunes a todos los Excel para la hoja dada.
+        """
+
+        lista = self.ui.listaArchivosMultiples
+        rutas = [lista.item(i).text() for i in range(lista.count())]
+
+        if not rutas or not nombre_hoja:
+            self.ui.listaColumnasClaveMultiple.clear()
+            self.ui.listaColumnasCompararMultiple.clear()
+
+            return
+
+        try:
+            columnas_comunes = None
+
+            for ruta in rutas:
+                df = leer_excel(ruta, nombre_hoja)
+                cols = set(df.columns)
+                if columnas_comunes is None:
+                    columnas_comunes = cols
+                else:
+                    columnas_comunes &= cols
+
+            columnas = sorted(list(columnas_comunes or []))
+
+            self.ui.listaColumnasClaveMultiple.clear()
+            self.ui.listaColumnasCompararMultiple.clear()
+
+            self.ui.listaColumnasClaveMultiple.addItems(columnas)
+            self.ui.listaColumnasCompararMultiple.addItems(columnas)
+
+        except Exception as error:
+            QMessageBox.critical(
+                self,
+                "Error al leer columnas",
+                f"No se pudieron leer las columnas de los archivos:\n\n{error}",
+            )
+
+    def procesar_comparacion_multiple(self):
+        """
+        Ejecuta la comparación secuencial de N archivos (1 → 2 → 3 ...)
+        y guarda los resultados directamente en una base de datos SQLite.
+        """
+
+        lista = self.ui.listaArchivosMultiples
+        rutas = [lista.item(i).text() for i in range(lista.count())]
+
+        if len(rutas) < 2:
+            QMessageBox.warning(
+                self,
+                "Faltan archivos",
+                "Debes agregar al menos 2 archivos Excel para comparar.",
+            )
+
+            return
+
+        nombre_hoja = self.ui.comboBoxHojaMultiple.currentText()
+
+        if not nombre_hoja:
+            QMessageBox.warning(
+                self,
+                "Falta la hoja",
+                "Selecciona una hoja válida para comparar.",
+            )
+
+            return
+
+        columnas_clave = [
+            item.text()
+            for item in self.ui.listaColumnasClaveMultiple.selectedItems()
+        ]
+
+        columnas_comparar = [
+            item.text()
+            for item in self.ui.listaColumnasCompararMultiple.selectedItems()
+        ]
+
+        if not columnas_comparar:
+            QMessageBox.warning(
+                self,
+                "Faltan columnas",
+                "Selecciona al menos una columna a comparar.",
+            )
+
+            return
+
+        # Pedir destino SQLite (preguntar si crear nueva o usar existente)
+        respuesta = QMessageBox.question(
+            self,
+            "Comparación múltiple",
+            "¿Quieres crear una nueva base de datos para el histórico?\n\n"
+            "Sí → Crear una nueva base de datos\n"
+            "No → Añadir a una base de datos existente",
+            buttons=(
+                QMessageBox.StandardButton.Yes
+                | QMessageBox.StandardButton.No
+                | QMessageBox.StandardButton.Cancel
+            ),
+            defaultButton=QMessageBox.StandardButton.Yes,
+        )
+
+        if respuesta == QMessageBox.StandardButton.Cancel:
+            return
+
+        if respuesta == QMessageBox.StandardButton.Yes:
+            nombre_bd = obtener_nombre_bd(rutas[0], rutas[-1])
+            ruta_bd, _ = QFileDialog.getSaveFileName(
+                self,
+                "Crear base de datos SQLite para Histórico Múltiple",
+                nombre_bd,
+                "Base de datos SQLite (*.sqlite *.db)",
+            )
+        else:
+            ruta_bd, _ = QFileDialog.getOpenFileName(
+                self,
+                "Seleccionar base de datos SQLite existente",
+                "",
+                "Base de datos SQLite (*.sqlite *.db)",
+            )
+
+        if not ruta_bd:
+            return
+
+        from src.excel.comparador import comparar_dataframes
+
+        pasos_totales = len(rutas) - 1
+        dialogo = QProgressDialog("Procesando archivos...", "Cancelar", 0, pasos_totales, self)
+        dialogo.setWindowTitle("Procesando Comparación Múltiple")
+        dialogo.setModal(True)
+        dialogo.show()
+
+        class WorkerMultiple(QThread):
+            progreso = Signal(int, str)
+            finalizado = Signal(int, object)
+
+            def __init__(self, rutas_files, hoja, claves, comparar, db_path):
+                super().__init__()
+                self.rutas = rutas_files
+                self.hoja = hoja
+                self.claves = claves
+                self.comparar = comparar
+                self.db_path = db_path
+
+            def run(self):
+                try:
+                    repositorio = RepositorioSQLite(self.db_path)
+                    total_c = 0
+
+                    df_ant = leer_excel(self.rutas[0], self.hoja)
+
+                    for i in range(len(self.rutas) - 1):
+                        if self.isInterruptionRequested():
+                            break
+
+                        r_ant = self.rutas[i]
+                        r_nue = self.rutas[i + 1]
+
+                        self.progreso.emit(i, f"Comparando ({i + 1}/{len(self.rutas) - 1}): {Path(r_nue).name}")
+
+                        df_nue = leer_excel(r_nue, self.hoja)
+                        ident = obtener_identificador_propuesto(r_ant, r_nue)
+
+                        cambios = comparar_dataframes(
+                            df_ant,
+                            df_nue,
+                            columnas_clave=self.claves,
+                            columnas_comparar=self.comparar,
+                        )
+
+                        repositorio.guardar_comparacion(
+                            identificador=ident,
+                            archivo_anterior=r_ant,
+                            archivo_nuevo=r_nue,
+                            hoja_anterior=self.hoja,
+                            hoja_nueva=self.hoja,
+                            columnas_clave=self.claves,
+                            columnas_comparadas=self.comparar,
+                            cambios=cambios,
+                        )
+
+                        total_c += len(cambios)
+                        df_ant = df_nue
+
+                    self.finalizado.emit(total_c, None)
+                except Exception as ex:
+                    self.finalizado.emit(0, ex)
+
+        self.worker_multiple = WorkerMultiple(rutas, nombre_hoja, columnas_clave, columnas_comparar, ruta_bd)
+
+        def _al_progresar(val, msg):
+            dialogo.setValue(val)
+            dialogo.setLabelText(msg)
+
+        def _al_finalizar(total_cambios, error):
+            dialogo.close()
+            if error:
+                QMessageBox.critical(
+                    self,
+                    "Error en comparación múltiple",
+                    f"No se pudo completar el procesamiento:\n\n{error}",
+                )
+                return
+
+            repositorio = RepositorioSQLite(ruta_bd)
+
+            QMessageBox.information(
+                self,
+                "Comparación múltiple completada",
+                (
+                    "Se han procesado secuencialmente todos los archivos "
+                    f"({len(rutas)} archivos, {len(rutas) - 1} comparaciones).\n\n"
+                    f"Cambios totales guardados: {total_cambios}\n\n"
+                    f"Base de datos:\n{ruta_bd}"
+                ),
+            )
+
+            # Cargar inmediatamente en el Histórico
+            self.ui.lineEditBaseHistorico.setText(ruta_bd)
+            self.ruta_historico = ruta_bd
+            self.repositorio_historico = repositorio
+
+            cambios_historico = repositorio.obtener_historico_cambios()
+            self._actualizar_identificadores_historico(cambios_historico)
+            self.modelo_historico.actualizar(cambios_historico)
+            self.limpiar_detalle_historico()
+
+            self.ui.tabWidget.setCurrentWidget(self.ui.tab_historico)
+            self._actualizar_estado_db(ruta_bd)
+
+            self.ui.statusBar.showMessage(
+                f"Procesados {len(rutas)} archivos secuencialmente."
+            )
+
+        dialogo.canceled.connect(lambda: self.worker_multiple.requestInterruption())
+        self.worker_multiple.progreso.connect(_al_progresar)
+        self.worker_multiple.finalizado.connect(_al_finalizar)
+        self.worker_multiple.start()
